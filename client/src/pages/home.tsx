@@ -1,18 +1,57 @@
 import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { FileUpload } from "@/components/file-upload";
 import { DataTable } from "@/components/data-table";
 import { Chatbot } from "@/components/chatbot";
 import { Header } from "@/components/header";
+import { Button } from "@/components/ui/button";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import type { ExcelData, ChatMessage } from "@shared/schema";
 
 export default function Home() {
-  const [frameworkData, setFrameworkData] = useState<ExcelData | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [isChatLoading, setIsChatLoading] = useState(false);
+  const { toast } = useToast();
+
+  // Fetch framework data
+  const { data: frameworkData, isLoading: isLoadingFramework } = useQuery<ExcelData | null>({
+    queryKey: ["/api/framework"],
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
+  // Fetch chat history
+  const { data: chatHistoryResponse, isLoading: isLoadingChat } = useQuery<{ success: boolean; data: ChatMessage[] }>({
+    queryKey: ["/api/chat/history"],
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
+  const messages = chatHistoryResponse?.data || [];
+
+  // Chat mutation
+  const chatMutation = useMutation({
+    mutationFn: async (message: string) => {
+      const response = await apiRequest("POST", "/api/chat", {
+        message,
+        context: frameworkData,
+      });
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/history"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Chat Error",
+        description: error instanceof Error ? error.message : "Failed to send message",
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleFileSelect = async (file: File) => {
     setIsUploading(true);
@@ -47,9 +86,15 @@ export default function Home() {
         throw new Error("Upload failed");
       }
 
-      const result = await response.json();
-      setFrameworkData(result.data);
       setUploadSuccess(true);
+
+      // Invalidate framework data query to refetch
+      await queryClient.invalidateQueries({ queryKey: ["/api/framework"] });
+
+      toast({
+        title: "Upload Successful",
+        description: "Your framework content has been loaded",
+      });
 
       setTimeout(() => {
         setIsUploading(false);
@@ -57,55 +102,16 @@ export default function Home() {
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : "Upload failed");
       setIsUploading(false);
+      toast({
+        title: "Upload Failed",
+        description: error instanceof Error ? error.message : "Failed to upload file",
+        variant: "destructive",
+      });
     }
   };
 
-  const handleSendMessage = async (message: string) => {
-    const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      role: "user",
-      content: message,
-      timestamp: new Date().toISOString(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setIsChatLoading(true);
-
-    try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message,
-          context: frameworkData,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Chat request failed");
-      }
-
-      const result = await response.json();
-      
-      const assistantMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: result.message,
-        timestamp: result.timestamp,
-      };
-
-      setMessages((prev) => [...prev, assistantMessage]);
-    } catch (error) {
-      const errorMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: "Sorry, I encountered an error. Please try again.",
-        timestamp: new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
-    } finally {
-      setIsChatLoading(false);
-    }
+  const handleSendMessage = (message: string) => {
+    chatMutation.mutate(message);
   };
 
   const handleExport = async () => {
@@ -131,8 +137,34 @@ export default function Home() {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "Export Successful",
+        description: "Your framework data has been exported",
+      });
     } catch (error) {
-      console.error("Export error:", error);
+      toast({
+        title: "Export Failed",
+        description: error instanceof Error ? error.message : "Failed to export data",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUploadNew = async () => {
+    try {
+      // Clear server-side data
+      await apiRequest("DELETE", "/api/framework", {});
+      await apiRequest("DELETE", "/api/chat/history", {});
+      
+      // Invalidate queries to refresh
+      await queryClient.invalidateQueries({ queryKey: ["/api/framework"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/chat/history"] });
+      
+      setUploadSuccess(false);
+      setUploadError(null);
+    } catch (error) {
+      console.error("Clear data error:", error);
     }
   };
 
@@ -144,7 +176,14 @@ export default function Home() {
         <div className="grid lg:grid-cols-[1fr_450px] gap-6 h-[calc(100vh-120px)]">
           {/* Left Panel - Content */}
           <div className="flex flex-col gap-6 overflow-hidden">
-            {!frameworkData ? (
+            {isLoadingFramework ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center">
+                  <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent"></div>
+                  <p className="text-sm text-muted-foreground mt-4">Loading framework data...</p>
+                </div>
+              </div>
+            ) : !frameworkData ? (
               <div className="flex items-center justify-center h-full">
                 <div className="w-full max-w-2xl">
                   <FileUpload
@@ -168,11 +207,7 @@ export default function Home() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      setFrameworkData(null);
-                      setMessages([]);
-                      setUploadSuccess(false);
-                    }}
+                    onClick={handleUploadNew}
                     data-testid="button-upload-new"
                   >
                     Upload New File
@@ -190,7 +225,7 @@ export default function Home() {
             <Chatbot
               messages={messages}
               onSendMessage={handleSendMessage}
-              isLoading={isChatLoading}
+              isLoading={chatMutation.isPending || isLoadingChat}
               hasFrameworkData={!!frameworkData}
             />
           </div>

@@ -73,13 +73,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/framework", async (req, res) => {
     try {
       const data = await storage.getFrameworkData();
-      if (!data) {
-        return res.status(404).json({ success: false, message: "No framework data found" });
-      }
-      res.json({ success: true, data });
+      // Return 200 with null if no data exists
+      res.json(data);
     } catch (error) {
       console.error("Get framework error:", error);
       res.status(500).json({ success: false, message: "Failed to retrieve framework data" });
+    }
+  });
+
+  // Clear framework data
+  app.delete("/api/framework", async (req, res) => {
+    try {
+      await storage.clearFrameworkData();
+      res.json({ success: true, message: "Framework data cleared" });
+    } catch (error) {
+      console.error("Clear framework error:", error);
+      res.status(500).json({ success: false, message: "Failed to clear framework data" });
     }
   });
 
@@ -163,6 +172,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get chat history error:", error);
       res.status(500).json({ success: false, message: "Failed to retrieve chat history" });
+    }
+  });
+
+  // Clear chat history
+  app.delete("/api/chat/history", async (req, res) => {
+    try {
+      await storage.clearChatMessages();
+      res.json({ success: true, message: "Chat history cleared" });
+    } catch (error) {
+      console.error("Clear chat history error:", error);
+      res.status(500).json({ success: false, message: "Failed to clear chat history" });
     }
   });
 

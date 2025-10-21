@@ -1,5 +1,6 @@
 import type { ChatMessage, InsertChatMessage, ExcelData } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { INITIAL_FRAMEWORK_DATA } from "./framework-data";
 
 export interface IStorage {
   // Framework data
@@ -14,7 +15,7 @@ export interface IStorage {
 }
 
 export class MemStorage implements IStorage {
-  private frameworkData: ExcelData | null = null;
+  private frameworkData: ExcelData | null = INITIAL_FRAMEWORK_DATA;
   private chatMessages: Map<string, ChatMessage> = new Map();
 
   async setFrameworkData(data: ExcelData): Promise<void> {

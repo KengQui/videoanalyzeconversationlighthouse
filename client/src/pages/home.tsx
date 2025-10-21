@@ -1,19 +1,12 @@
-import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { FileUpload } from "@/components/file-upload";
 import { DataTable } from "@/components/data-table";
 import { Chatbot } from "@/components/chatbot";
 import { Header } from "@/components/header";
-import { Button } from "@/components/ui/button";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { ExcelData, ChatMessage } from "@shared/schema";
 
 export default function Home() {
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadSuccess, setUploadSuccess] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Fetch framework data
@@ -52,63 +45,6 @@ export default function Home() {
       });
     },
   });
-
-  const handleFileSelect = async (file: File) => {
-    setIsUploading(true);
-    setUploadProgress(0);
-    setUploadError(null);
-    setUploadSuccess(false);
-
-    try {
-      // Simulate upload progress
-      const progressInterval = setInterval(() => {
-        setUploadProgress((prev) => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return 90;
-          }
-          return prev + 10;
-        });
-      }, 200);
-
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      clearInterval(progressInterval);
-      setUploadProgress(100);
-
-      if (!response.ok) {
-        throw new Error("Upload failed");
-      }
-
-      setUploadSuccess(true);
-
-      // Invalidate framework data query to refetch
-      await queryClient.invalidateQueries({ queryKey: ["/api/framework"] });
-
-      toast({
-        title: "Upload Successful",
-        description: "Your framework content has been loaded",
-      });
-
-      setTimeout(() => {
-        setIsUploading(false);
-      }, 1000);
-    } catch (error) {
-      setUploadError(error instanceof Error ? error.message : "Upload failed");
-      setIsUploading(false);
-      toast({
-        title: "Upload Failed",
-        description: error instanceof Error ? error.message : "Failed to upload file",
-        variant: "destructive",
-      });
-    }
-  };
 
   const handleSendMessage = (message: string) => {
     chatMutation.mutate(message);
@@ -151,23 +87,6 @@ export default function Home() {
     }
   };
 
-  const handleUploadNew = async () => {
-    try {
-      // Clear server-side data
-      await apiRequest("DELETE", "/api/framework", {});
-      await apiRequest("DELETE", "/api/chat/history", {});
-      
-      // Invalidate queries to refresh
-      await queryClient.invalidateQueries({ queryKey: ["/api/framework"] });
-      await queryClient.invalidateQueries({ queryKey: ["/api/chat/history"] });
-      
-      setUploadSuccess(false);
-      setUploadError(null);
-    } catch (error) {
-      console.error("Clear data error:", error);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <Header onExport={handleExport} hasData={!!frameworkData} />
@@ -183,38 +102,18 @@ export default function Home() {
                   <p className="text-sm text-muted-foreground mt-4">Loading framework data...</p>
                 </div>
               </div>
-            ) : !frameworkData ? (
-              <div className="flex items-center justify-center h-full">
-                <div className="w-full max-w-2xl">
-                  <FileUpload
-                    onFileSelect={handleFileSelect}
-                    isUploading={isUploading}
-                    uploadProgress={uploadProgress}
-                    uploadSuccess={uploadSuccess}
-                    uploadError={uploadError}
-                  />
-                </div>
-              </div>
             ) : (
               <div className="flex flex-col gap-4 h-full overflow-hidden">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-2xl font-semibold">Framework Content</h2>
+                    <h2 className="text-2xl font-semibold">Agent Evaluation Framework</h2>
                     <p className="text-sm text-muted-foreground mt-1">
-                      {frameworkData.rows.length} rows, {frameworkData.headers.length} columns
+                      {frameworkData?.rows.length || 0} evaluation criteria across {frameworkData?.headers.length || 0} milestones
                     </p>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleUploadNew}
-                    data-testid="button-upload-new"
-                  >
-                    Upload New File
-                  </Button>
                 </div>
                 <div className="flex-1 overflow-auto">
-                  <DataTable data={frameworkData} />
+                  {frameworkData && <DataTable data={frameworkData} />}
                 </div>
               </div>
             )}

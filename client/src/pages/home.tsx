@@ -2,7 +2,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { DataTable } from "@/components/data-table";
 import { Chatbot } from "@/components/chatbot";
 import { Header } from "@/components/header";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { ExcelData, ChatMessage } from "@shared/schema";
 
@@ -50,46 +50,9 @@ export default function Home() {
     chatMutation.mutate(message);
   };
 
-  const handleExport = async () => {
-    if (!frameworkData) return;
-
-    try {
-      const response = await fetch("/api/export", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(frameworkData),
-      });
-
-      if (!response.ok) {
-        throw new Error("Export failed");
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `framework_export_${Date.now()}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-
-      toast({
-        title: "Export Successful",
-        description: "Your framework data has been exported",
-      });
-    } catch (error) {
-      toast({
-        title: "Export Failed",
-        description: error instanceof Error ? error.message : "Failed to export data",
-        variant: "destructive",
-      });
-    }
-  };
-
   return (
     <div className="min-h-screen bg-background">
-      <Header onExport={handleExport} hasData={!!frameworkData} />
+      <Header />
 
       <div className="container mx-auto px-4 py-6">
         <div className="grid lg:grid-cols-[1fr_450px] gap-6 h-[calc(100vh-120px)]">

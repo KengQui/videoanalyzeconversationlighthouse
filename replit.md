@@ -2,9 +2,18 @@
 
 ## Overview
 
-The Agent Eval Framework Explorer is a web application designed to help users explore and analyze agent evaluation frameworks through an interactive interface. The application allows users to upload spreadsheet data (Excel/CSV files), view and interact with that data in a table format, and ask questions about the framework content using an AI-powered chatbot assistant.
+The Agent Eval Framework Explorer is a web application designed to help users explore and analyze agent evaluation frameworks through an interactive interface. The application displays a hardcoded agent evaluation framework (197 criteria across 4 milestones) in an interactive data table and provides an AI-powered chatbot assistant to answer questions about the framework content.
 
 The application uses a dual-panel interface that balances data exploration with AI assistance, providing a clean, technical UI optimized for information-dense content.
+
+## Recent Changes
+
+**October 21, 2025**: Transitioned from file upload system to hardcoded framework data
+- Removed file upload UI and functionality  
+- Framework data now hardcoded in `server/framework-data.ts` (197 evaluation criteria)
+- Removed upload, export, and data management API endpoints
+- Simplified Header component (removed export button)
+- Framework data immediately available on page load
 
 ## User Preferences
 
@@ -36,11 +45,9 @@ Preferred communication style: Simple, everyday language.
 
 **Language**: TypeScript with ES Modules.
 
-**API Design**: RESTful endpoints for file uploads, chat interactions, and data retrieval.
+**API Design**: RESTful endpoints for chat interactions and data retrieval.
 
-**File Processing**: Uses the `xlsx` library to parse Excel and CSV files, converting spreadsheet data into structured JSON format.
-
-**Storage Strategy**: In-memory storage implementation (`MemStorage` class) for both framework data and chat history. This provides fast access but data is ephemeral and lost on server restart.
+**Storage Strategy**: In-memory storage implementation (`MemStorage` class) initialized with hardcoded framework data and chat history. Framework data persists across server restarts by being hardcoded in `server/framework-data.ts`.
 
 **Development Setup**: Custom Vite middleware integration for hot module replacement and seamless development experience.
 
@@ -51,7 +58,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Data Storage Solutions
 
-**Current Implementation**: In-memory storage using JavaScript Maps and objects. Framework data and chat messages are stored in RAM during application runtime.
+**Current Implementation**: In-memory storage using JavaScript Maps and objects. Framework data is hardcoded and initialized on server startup from `server/framework-data.ts` (197 evaluation criteria). Chat messages are stored in RAM during application runtime.
 
 **Database Schema Design**: PostgreSQL schema defined using Drizzle ORM with two main tables:
 - `framework_content`: Stores uploaded spreadsheet rows as flexible JSON
@@ -66,11 +73,6 @@ Preferred communication style: Simple, everyday language.
 **AI Integration**: Google Gemini API (via `@google/genai` package) using the gemini-2.5-flash model for chat functionality. The chatbot provides context-aware responses by incorporating uploaded framework data into prompts.
 
 **Database**: Configured for PostgreSQL via Neon serverless (`@neondatabase/serverless`), though currently using in-memory storage. Connection string expected via `DATABASE_URL` environment variable.
-
-**File Upload**: Multer middleware for handling multipart/form-data file uploads with:
-- 10MB file size limit
-- File type validation for .xlsx and .csv formats
-- Memory storage (files stored in buffer, not on disk)
 
 **UI Component Dependencies**:
 - Radix UI primitives for accessible, unstyled components

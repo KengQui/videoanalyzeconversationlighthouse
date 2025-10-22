@@ -9,7 +9,8 @@ export const INITIAL_EXAMPLES_DATA: ExamplesData = {
       badExample: `AI: "Pay date offset from end date, Derived from 1 matching example, confidence 1.0, across 1 example, Status: ready"`,
       whyItsBad: `Uses technical/ML jargon like "Derived from 1 matching example, confidence 1.0" and system terminology like "Pay date offset from end date" without explaining what these mean to the user. Also uses confusing phrases like "across 1 example" and "Status: ready" which don't clarify what the user needs to know.`,
       goodExample: `AI: "I found your pay schedule configuration. Your employees are paid 5 days after each pay period ends. Would you like me to set this up for you?"`,
-      additionalNotes: "Remove all ML/data extraction metadata and use plain language that matches the user's mental model"
+      additionalNotes: "Remove all ML/data extraction metadata and use plain language that matches the user's mental model",
+      source: "Pay period configuration agent"
     },
     {
       id: "clarity-2", 
@@ -18,7 +19,8 @@ export const INITIAL_EXAMPLES_DATA: ExamplesData = {
       badExample: `AI: "Would you like to configure the W2 pension box type? Options: System Rules/Yes/No"`,
       whyItsBad: `Uses unexplained technical terminology. "W2 pension box type" is confusing - it's actually about Box 13 'Retirement plan' on W-2 forms. "System Rules" option is unclear with no definition provided.`,
       goodExample: `AI: "When should Box 13 'Retirement plan' be checked on W-2 forms?\n• System Rules: Check only if employee contributed or received employer contributions\n• Always: Check for all eligible employees\n• Never: Never check this box"`,
-      additionalNotes: "Always explain technical terms and what each option means in practical terms"
+      additionalNotes: "Always explain technical terms and what each option means in practical terms",
+      source: "Pay period configuration agent"
     },
     {
       id: "context-awareness-1",
@@ -27,7 +29,8 @@ export const INITIAL_EXAMPLES_DATA: ExamplesData = {
       badExample: `System: "File uploaded successfully"\nAI: "Would you like to create a pay period profile from this file?"`,
       whyItsBad: `The system just confirmed the file was uploaded, but the AI acts unaware and asks if the user wants to use it. The AI should already know the file was uploaded and proceed accordingly.`,
       goodExample: `System: "File uploaded successfully"\nAI: "I'll analyze your uploaded file now and show you what I found..."`,
-      additionalNotes: "AI should maintain awareness of system state and recent actions"
+      additionalNotes: "AI should maintain awareness of system state and recent actions",
+      source: "Pay period configuration agent"
     },
     {
       id: "context-awareness-2",
@@ -36,7 +39,8 @@ export const INITIAL_EXAMPLES_DATA: ExamplesData = {
       badExample: `AI: "What is the minimum age requirement for employees?"\n[Document clearly states: "Minimum age: 21"]\nAI: "What is the service requirement?"\n[Document states: "1 year of service"]`,
       whyItsBad: `AI asks for information that's already available in the uploaded document. It fails to extract and use the data, creating unnecessary work for the user.`,
       goodExample: `AI: "I found these eligibility requirements in your document:\n• Minimum age: 21\n• Service requirement: 1 year\nIs this correct?"`,
-      additionalNotes: "Always extract available information from documents before asking users"
+      additionalNotes: "Always extract available information from documents before asking users",
+      source: "Pay period configuration agent"
     },
     {
       id: "brevity-1",
@@ -45,7 +49,8 @@ export const INITIAL_EXAMPLES_DATA: ExamplesData = {
       badExample: `AI: "The maximum employee contribution percentage is 100%. Now, regarding the W2 pension box type configuration..."`,
       whyItsBad: `Includes unrelated information (contribution limits) right before asking about W2 configuration. This adds unnecessary verbosity and cognitive load.`,
       goodExample: null,
-      additionalNotes: "Need user input for good example - should separate unrelated topics"
+      additionalNotes: "Need user input for good example - should separate unrelated topics",
+      source: "Pay period configuration agent"
     },
     {
       id: "consistency-1",
@@ -54,7 +59,8 @@ export const INITIAL_EXAMPLES_DATA: ExamplesData = {
       badExample: `AI: "Found majority cadence: Semi-Monthly"\n[But then shows] "Profile #1: Bi-Weekly Pay Period (Type: EVERY_N_WEEKS)"`,
       whyItsBad: `Contradicts itself immediately - says semi-monthly is the majority but then shows bi-weekly as the main profile. Creates confusion about what was actually found.`,
       goodExample: `AI: "I found multiple pay schedules in your document:\n• 2 profiles use Bi-Weekly\n• 3 profiles use Semi-Monthly\nWhich would you like to configure?"`,
-      additionalNotes: "Be consistent in reporting findings and avoid contradictions"
+      additionalNotes: "Be consistent in reporting findings and avoid contradictions",
+      source: "Pay period configuration agent"
     },
     {
       id: "empathy-tone-1",
@@ -63,7 +69,8 @@ export const INITIAL_EXAMPLES_DATA: ExamplesData = {
       badExample: `AI: "I encountered an issue displaying the profiles in a table"`,
       whyItsBad: `Exposes internal technical problems to the user, making the system appear unreliable and unfinished. Creates doubt about the system's capabilities.`,
       goodExample: null,
-      additionalNotes: "Need user input for good example - should handle errors gracefully without exposing internal issues"
+      additionalNotes: "Need user input for good example - should handle errors gracefully without exposing internal issues",
+      source: "Pay period configuration agent"
     },
     {
       id: "turn-taking-1",
@@ -72,7 +79,8 @@ export const INITIAL_EXAMPLES_DATA: ExamplesData = {
       badExample: `System: "File uploaded successfully"\nAI: "The file has been uploaded. Would you like to create a profile from this file?"`,
       whyItsBad: `Unnecessary confirmation after a successful action. The system already confirmed the upload, so the AI should proceed to the next logical step.`,
       goodExample: `System: "File uploaded successfully"\nAI: [Proceeds directly to analyze and display findings]`,
-      additionalNotes: "Avoid redundant confirmations and maintain conversation flow"
+      additionalNotes: "Avoid redundant confirmations and maintain conversation flow",
+      source: "Pay period configuration agent"
     },
     {
       id: "turn-taking-2",
@@ -81,7 +89,8 @@ export const INITIAL_EXAMPLES_DATA: ExamplesData = {
       badExample: `AI: "When does eligibility begin?"\nAI: "Is there a waiting period?"\n[These are asked in the wrong order]`,
       whyItsBad: `Asks about timing before establishing if there's a waiting period at all. The logical order should be: first ask IF there's a waiting period, then ask about timing details.`,
       goodExample: `AI: "Is there a waiting period for eligibility?"\n[If yes] → "How long is the waiting period?"\n[If no] → "When does eligibility begin?"`,
-      additionalNotes: "Follow logical question sequencing: prerequisites before details"
+      additionalNotes: "Follow logical question sequencing: prerequisites before details",
+      source: "Pay period configuration agent"
     },
     {
       id: "proactive-guidance-1",
@@ -90,7 +99,8 @@ export const INITIAL_EXAMPLES_DATA: ExamplesData = {
       badExample: `User: "I want a weekly pay period starting 1 Jan 2025 to 31 dec 2025"\nAI: [Accepts this without question]`,
       whyItsBad: `Doesn't flag that weekly pay periods with end dates don't make logical sense. Weekly pay periods typically run indefinitely. AI should recognize this contradiction and guide the user.`,
       goodExample: `User: "I want a weekly pay period starting 1 Jan 2025 to 31 dec 2025"\nAI: "I notice you mentioned an end date. Weekly pay periods typically run indefinitely unless you're planning to change your schedule. Did you mean to set up a temporary pay schedule, or should this continue indefinitely?"`,
-      additionalNotes: "Proactively identify and clarify illogical inputs"
+      additionalNotes: "Proactively identify and clarify illogical inputs",
+      source: "Pay period configuration agent"
     },
     {
       id: "proactive-guidance-2",
@@ -99,7 +109,8 @@ export const INITIAL_EXAMPLES_DATA: ExamplesData = {
       badExample: `AI: "Select from: System Rules/Yes/No"\n[No explanation of what these options mean]`,
       whyItsBad: `Provides options without any guidance on when to use each one. Users don't know what "System Rules" means or when they should choose Yes vs No.`,
       goodExample: null,
-      additionalNotes: "Need user input for good example - should explain when to use each option"
+      additionalNotes: "Need user input for good example - should explain when to use each option",
+      source: "Pay period configuration agent"
     },
     {
       id: "confirmation-feedback-1",
@@ -108,7 +119,8 @@ export const INITIAL_EXAMPLES_DATA: ExamplesData = {
       badExample: `AI: [Shows extraction metadata]\nAI: "Please confirm these settings"\nAI: [Only then creates the actual configuration]`,
       whyItsBad: `Backwards confirmation workflow - asks user to confirm extraction data instead of showing what will actually be configured. User confirms before seeing the final result.`,
       goodExample: `AI: "Here's what I'll configure based on your document:\n[Shows actual configuration preview]\nWould you like me to proceed with these settings?"`,
-      additionalNotes: "Show what will be configured before asking for confirmation"
+      additionalNotes: "Show what will be configured before asking for confirmation",
+      source: "Pay period configuration agent"
     },
     {
       id: "error-recovery-1",
@@ -117,7 +129,8 @@ export const INITIAL_EXAMPLES_DATA: ExamplesData = {
       badExample: `User: "Can you setup if..." [grammatically broken]\nAI: [Proceeds without clarifying]`,
       whyItsBad: `No clear help or clarification pathways when user intent is unclear. Doesn't offer disambiguation or ways to clarify the ambiguous request.`,
       goodExample: null,
-      additionalNotes: "Need user input for good example - should offer clarification options"
+      additionalNotes: "Need user input for good example - should offer clarification options",
+      source: "Pay period configuration agent"
     },
     {
       id: "accessibility-1",
@@ -126,7 +139,8 @@ export const INITIAL_EXAMPLES_DATA: ExamplesData = {
       badExample: `AI: "Configure primary deduction type (rollup deduction) and additional deduction level (secondary deduction)"`,
       whyItsBad: `Heavy use of technical/UKG-specific terminology creates barriers for users unfamiliar with the system. Raises reading level and adds cognitive load.`,
       goodExample: null,
-      additionalNotes: "Need user input for good example - should use plain language accessible to all users"
+      additionalNotes: "Need user input for good example - should use plain language accessible to all users",
+      source: "Pay period configuration agent"
     },
     // New examples from Retirement Agent revision document
     {
@@ -136,7 +150,8 @@ export const INITIAL_EXAMPLES_DATA: ExamplesData = {
       badExample: `AI: "What configuration do you want for employees?"\nAI: "Now, what configuration do you want for employers?"\n[Asks the same question twice instead of applying the same configuration]`,
       whyItsBad: `Shows no awareness of context - asks the same question again for employer instead of intelligently asking if they follow the same configuration as employees. Creates unnecessary repetition and wastes user's time.`,
       goodExample: `AI: "What configuration do you want for employees?"\nAI: "Should employers use the same configuration, or would you like to set different options?"`,
-      additionalNotes: "Reuse information intelligently to reduce repetitive questions"
+      additionalNotes: "Reuse information intelligently to reduce repetitive questions",
+      source: "Retirement agent"
     },
     {
       id: "context-awareness-4",
@@ -145,7 +160,8 @@ export const INITIAL_EXAMPLES_DATA: ExamplesData = {
       badExample: `[Document clearly shows: "Vendor: Voya"]\nAI: "What is the vendor name for this retirement plan?"`,
       whyItsBad: `AI fails to extract information from uploaded documents. Asks for vendor name despite "Voya" being clearly mentioned in the document. Also asks for minimum age when document states "Minimum age: 21".`,
       goodExample: `AI: "I found in your document that the vendor is Voya and the minimum age is 21. Is this correct?"`,
-      additionalNotes: "Always extract and confirm available information from documents before asking users to re-enter it"
+      additionalNotes: "Always extract and confirm available information from documents before asking users to re-enter it",
+      source: "Retirement agent"
     },
     {
       id: "clarity-4",
@@ -154,7 +170,8 @@ export const INITIAL_EXAMPLES_DATA: ExamplesData = {
       badExample: `AI: "What is the primary deduction type (rollup deduction)?"\nAI: "What is the additional deduction level (secondary deduction)?"`,
       whyItsBad: `Uses UKG-specific technical terminology without explanation. "Primary deduction type" and "rollup deduction" are system terms that users won't understand. Should explain these mean which retirement plan is primary when employees have multiple plans.`,
       goodExample: `AI: "If employees have multiple retirement plans, which should be the primary plan?"\nAI: "Do you have a secondary retirement plan to include?"`,
-      additionalNotes: "Translate system terminology into plain language users understand"
+      additionalNotes: "Translate system terminology into plain language users understand",
+      source: "Retirement agent"
     },
     {
       id: "clarity-5",
@@ -163,7 +180,8 @@ export const INITIAL_EXAMPLES_DATA: ExamplesData = {
       badExample: `AI: "What is the seniority date?"`,
       whyItsBad: `Ambiguous term 'seniority date' can be interpreted different ways - hire date, promotion date, or vesting start date. No context or explanation provided.`,
       goodExample: `AI: "What is the employee's original hire date? (This is the date they first started working at your company)"`,
-      additionalNotes: "Provide clear definitions and examples when asking for specific dates or terms that might be ambiguous"
+      additionalNotes: "Provide clear definitions and examples when asking for specific dates or terms that might be ambiguous",
+      source: "Retirement agent"
     },
     {
       id: "turn-taking-3",
@@ -172,7 +190,8 @@ export const INITIAL_EXAMPLES_DATA: ExamplesData = {
       badExample: `AI: [Mixes eligibility questions with contribution questions randomly]\n"What's the minimum age?"\n"What's the Roth contribution limit?"\n"What's the service requirement?"\n"What's the max contribution percentage?"`,
       whyItsBad: `No logical grouping - jumps between eligibility topics and contribution topics randomly. Should group related questions: Plan basics → Eligibility → Contributions → Deductions → Confirmation. Creates cognitive load from constant context switching.`,
       goodExample: `AI: "Let's start with eligibility requirements:\n• Minimum age?\n• Service requirements?\n\nNow for contribution settings:\n• Roth contribution limit?\n• Maximum contribution percentage?"`,
-      additionalNotes: "Group related questions together to reduce cognitive load"
+      additionalNotes: "Group related questions together to reduce cognitive load",
+      source: "Retirement agent"
     },
     {
       id: "turn-taking-4",
@@ -181,7 +200,8 @@ export const INITIAL_EXAMPLES_DATA: ExamplesData = {
       badExample: `AI: "When does eligibility begin?"\nAI: "Is there a waiting period for eligibility?"`,
       whyItsBad: `Asks "WHEN does eligibility begin" before asking "IS THERE a waiting period" - this is backwards logic. Should first establish if there's a waiting period, then ask about timing.`,
       goodExample: `AI: "Is there a waiting period for eligibility?"\n[If yes] → "How long is the waiting period?"\n[If no] → "When does eligibility begin?"`,
-      additionalNotes: "Follow logical question sequencing: prerequisites before details"
+      additionalNotes: "Follow logical question sequencing: prerequisites before details",
+      source: "Retirement agent"
     },
     {
       id: "consistency-2",
@@ -190,7 +210,8 @@ export const INITIAL_EXAMPLES_DATA: ExamplesData = {
       badExample: `AI: "401k contribution limits" [for one user]\nAI: "maximum allowable deferrals" [for another user]\n[Same concept, different phrasing]`,
       whyItsBad: `Uses different terminology for the same concept across users, creating inconsistency and potential confusion. If AI constructs questions dynamically, it introduces variability and compliance risks in regulated areas like retirement configuration.`,
       goodExample: `AI: [Always uses] "401k contribution limits"`,
-      additionalNotes: "Use consistent terminology across all users, especially for regulated compliance topics"
+      additionalNotes: "Use consistent terminology across all users, especially for regulated compliance topics",
+      source: "Retirement agent"
     },
     {
       id: "empathy-tone-2",
@@ -199,7 +220,8 @@ export const INITIAL_EXAMPLES_DATA: ExamplesData = {
       badExample: `AI: "Configure the primary deduction type for the rollup deduction in the additional deduction level"`,
       whyItsBad: `Uses technical UKG terminology without considering user's knowledge level. No warmth, no acknowledgment that users might be confused, no attempt to make technical concepts accessible.`,
       goodExample: null,
-      additionalNotes: "Need user input for good example - should acknowledge complexity and guide users through it"
+      additionalNotes: "Need user input for good example - should acknowledge complexity and guide users through it",
+      source: "Retirement agent"
     },
     {
       id: "proactive-guidance-3",
@@ -208,7 +230,8 @@ export const INITIAL_EXAMPLES_DATA: ExamplesData = {
       badExample: `AI: "First month/quarter/year..."\n[Options 2-6 shown without any context about what they mean]`,
       whyItsBad: `Provides date options without explaining they relate to 'following waiting period'. In the UI this text appears when selected, but in conversation it's missing, leaving users confused about what these options mean.`,
       goodExample: `AI: "When does the waiting period end?\n• First month following waiting period\n• First quarter following waiting period\n• First year following waiting period"`,
-      additionalNotes: "Always provide context for options, don't assume users understand implicit relationships"
+      additionalNotes: "Always provide context for options, don't assume users understand implicit relationships",
+      source: "Retirement agent"
     },
     {
       id: "proactive-guidance-4",
@@ -217,7 +240,8 @@ export const INITIAL_EXAMPLES_DATA: ExamplesData = {
       badExample: `AI: "W2 pension box type: System Rules/Yes/No"\n[No explanation of when to use each]`,
       whyItsBad: `Provides options without any guidance. Users don't understand that "System Rules" means check Box 13 only if employee contributed, "Yes" means always check for eligible employees, "No" means never check.`,
       goodExample: `AI: "When should Box 13 'Retirement plan' be checked on W-2 forms?\n\n• System Rules: Check only if employee contributed or received employer contributions\n• Always (Yes): Check for all eligible employees, even if they didn't contribute\n• Never (No): Never check this box (for non-qualified plans)"`,
-      additionalNotes: "Explain what each option means and when to use it, especially for compliance-related choices"
+      additionalNotes: "Explain what each option means and when to use it, especially for compliance-related choices",
+      source: "Retirement agent"
     },
     {
       id: "accessibility-2",
@@ -226,7 +250,8 @@ export const INITIAL_EXAMPLES_DATA: ExamplesData = {
       badExample: `AI: "What is the W2 pension box type for the primary deduction type?"`,
       whyItsBad: `Heavy use of system-specific terminology creates barriers for users without retirement plan administration expertise. Grammatical errors and complex phrasing reduce accessibility for all users, especially those with language barriers.`,
       goodExample: null,
-      additionalNotes: "Need user input for good example - should use plain language accessible to non-experts"
+      additionalNotes: "Need user input for good example - should use plain language accessible to non-experts",
+      source: "Retirement agent"
     },
     {
       id: "confirmation-feedback-2",
@@ -235,7 +260,8 @@ export const INITIAL_EXAMPLES_DATA: ExamplesData = {
       badExample: `AI: [Provides recommendations before all questions are asked]\nAI: "I recommend setting up Option A"\nAI: "Oh wait, one more question..."`,
       whyItsBad: `Provides recommendations prematurely before gathering all necessary information. Should confirm complete understanding before making suggestions.`,
       goodExample: `AI: [Asks all clarifying questions first]\nAI: "Based on all your requirements, I recommend..."`,
-      additionalNotes: "Gather all information before making recommendations"
+      additionalNotes: "Gather all information before making recommendations",
+      source: "Retirement agent"
     },
     {
       id: "brevity-2",
@@ -244,7 +270,8 @@ export const INITIAL_EXAMPLES_DATA: ExamplesData = {
       badExample: `AI: "The maximum employee contribution percentage is 100%. Now, regarding the W2 pension box type configuration..."`,
       whyItsBad: `Includes unrelated information (contribution limits) right before asking about W2 configuration. These are unrelated topics that confuse users and add unnecessary verbosity.`,
       goodExample: null,
-      additionalNotes: "Need user input for good example - keep topics separate and focused"
+      additionalNotes: "Need user input for good example - keep topics separate and focused",
+      source: "Retirement agent"
     }
   ]
 };

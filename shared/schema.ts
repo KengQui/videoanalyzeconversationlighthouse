@@ -67,6 +67,7 @@ export interface ConversationExample {
   goodExample: string | null; // null means "Need user input"
   score?: string; // e.g., "2/5"
   additionalNotes?: string;
+  source?: string; // e.g., "Pay period configuration agent", "Retirement agent"
 }
 
 export interface ExamplesData {

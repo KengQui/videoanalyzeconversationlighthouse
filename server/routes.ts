@@ -84,7 +84,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get example by principle
+  // Get example by principle (single - kept for backwards compatibility)
   app.get("/api/examples/principle/:principle", async (req, res) => {
     try {
       const { principle } = req.params;
@@ -96,6 +96,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get example by principle error:", error);
       res.status(500).json({ success: false, message: "Failed to retrieve example" });
+    }
+  });
+
+  // Get ALL examples for a principle
+  app.get("/api/examples/all/:principle", async (req, res) => {
+    try {
+      const { principle } = req.params;
+      const examples = await storage.getExamplesByPrinciple(principle);
+      res.json({ success: true, data: examples });
+    } catch (error) {
+      console.error("Get all examples by principle error:", error);
+      res.status(500).json({ success: false, message: "Failed to retrieve examples" });
     }
   });
 

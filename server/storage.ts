@@ -17,6 +17,7 @@ export interface IStorage {
   // Conversation examples
   getExamples(): Promise<ExamplesData>;
   getExampleByPrinciple(principle: string): Promise<ConversationExample | null>;
+  getExamplesByPrinciple(principle: string): Promise<ConversationExample[]>;
   updateExample(id: string, example: Partial<ConversationExample>): Promise<ConversationExample | null>;
   addExample(example: Omit<ConversationExample, 'id'>): Promise<ConversationExample>;
 }
@@ -60,6 +61,11 @@ export class MemStorage implements IStorage {
   async getExampleByPrinciple(principle: string): Promise<ConversationExample | null> {
     const examples = Array.from(this.examplesData.values());
     return examples.find(e => e.principle.toLowerCase() === principle.toLowerCase()) || null;
+  }
+
+  async getExamplesByPrinciple(principle: string): Promise<ConversationExample[]> {
+    const examples = Array.from(this.examplesData.values());
+    return examples.filter(e => e.principle.toLowerCase() === principle.toLowerCase());
   }
 
   async updateExample(id: string, updates: Partial<ConversationExample>): Promise<ConversationExample | null> {

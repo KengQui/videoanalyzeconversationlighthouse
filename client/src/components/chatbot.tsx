@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Sparkles, Copy, RotateCw } from "lucide-react";
+import { Send, Sparkles, Copy } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ interface ChatbotProps {
   onSendMessage: (message: string) => void;
   isLoading?: boolean;
   hasFrameworkData?: boolean;
+  variant?: "default" | "sheet";
 }
 
 export function Chatbot({
@@ -18,6 +19,7 @@ export function Chatbot({
   onSendMessage,
   isLoading = false,
   hasFrameworkData = false,
+  variant = "default",
 }: ChatbotProps) {
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -53,18 +55,20 @@ export function Chatbot({
     "How do I use this framework?",
   ];
 
-  return (
-    <Card className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center gap-2 p-4 border-b">
-        <Sparkles className="h-5 w-5 text-chart-4" />
-        <h2 className="font-semibold">AI Assistant</h2>
-        {hasFrameworkData && (
-          <span className="ml-auto text-xs bg-chart-4/10 text-chart-4 px-2 py-1 rounded-full">
-            Context: Framework loaded
-          </span>
-        )}
-      </div>
+  const content = (
+    <>
+      {/* Header - Only show for default variant */}
+      {variant === "default" && (
+        <div className="flex items-center gap-2 p-4 border-b">
+          <Sparkles className="h-5 w-5 text-chart-4" />
+          <h2 className="font-semibold">AI Assistant</h2>
+          {hasFrameworkData && (
+            <span className="ml-auto text-xs bg-chart-4/10 text-chart-4 px-2 py-1 rounded-full">
+              Context: Framework loaded
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -76,7 +80,7 @@ export function Chatbot({
               <p className="text-sm text-muted-foreground mt-1">
                 {hasFrameworkData
                   ? "I can help you understand the framework content"
-                  : "Upload your framework to get started"}
+                  : "Framework data is loading..."}
               </p>
             </div>
             {hasFrameworkData && (
@@ -165,7 +169,7 @@ export function Chatbot({
             placeholder={
               hasFrameworkData
                 ? "Ask about the framework..."
-                : "Upload framework first..."
+                : "Loading framework..."
             }
             disabled={!hasFrameworkData || isLoading}
             className="flex-1"
@@ -181,6 +185,12 @@ export function Chatbot({
           </Button>
         </div>
       </form>
-    </Card>
+    </>
   );
+
+  if (variant === "sheet") {
+    return <div className="flex flex-col h-full">{content}</div>;
+  }
+
+  return <Card className="flex flex-col h-full">{content}</Card>;
 }

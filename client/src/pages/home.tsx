@@ -125,32 +125,11 @@ export default function Home() {
       setSelectedExample(matchedExample);
       setExamplesPanelOpen(true);
     } else {
-      // Try to fetch by principle name extracted from row text
-      try {
-        // Extract potential principle names from the row text
-        const words = rowText.split(/[\s,.-]+/).filter(w => w.length > 2);
-        for (const word of words) {
-          const response = await apiRequest("GET", `/api/examples/principle/${encodeURIComponent(word)}`);
-          if (response?.data) {
-            setSelectedExample(response.data);
-            setExamplesPanelOpen(true);
-            return;
-          }
-        }
-        
-        // If no match found, show a message
-        toast({
-          title: "No Example Found",
-          description: "No conversation design example is available for this item yet.",
-        });
-      } catch (error) {
-        console.error("Error fetching example:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load example. Please try again.",
-          variant: "destructive",
-        });
-      }
+      // No match found, show a message
+      toast({
+        title: "No Example Found",
+        description: "No conversation design example is available for this item yet.",
+      });
     }
   };
 

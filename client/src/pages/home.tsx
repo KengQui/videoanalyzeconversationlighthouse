@@ -90,6 +90,10 @@ export default function Home() {
   const handleExampleClick = async (rowText: string) => {
     setSelectedRowText(rowText);
     
+    // Debug logging
+    console.log("Clicked row text:", rowText);
+    console.log("Available examples:", examples.map(e => e.principle));
+    
     // Try to find a matching example based on the row text
     const rowTextLower = rowText.toLowerCase();
     let matchedExample: ConversationExample | null = null;
@@ -100,6 +104,7 @@ export default function Home() {
       
       // Check for direct match first
       if (rowTextLower.includes(principleLower)) {
+        console.log("Direct match found for:", example.principle);
         matchedExample = example;
         break;
       }
@@ -115,6 +120,7 @@ export default function Home() {
       
       // If all significant words match, we found it
       if (wordsMatched === principleWords.length && principleWords.length > 0) {
+        console.log("Word match found for:", example.principle, "Words:", principleWords);
         matchedExample = example;
         break;
       }

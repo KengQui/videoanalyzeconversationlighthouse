@@ -41,15 +41,23 @@ export default function Home() {
   const examplesAvailable = useMemo(() => {
     const set = new Set<string>();
     examples.forEach(example => {
-      // Add the principle itself
-      set.add(example.principle.toLowerCase());
-      // Also add variations that might appear in the framework data
-      const variations = [
-        example.principle.toLowerCase(),
-        example.principle.toLowerCase().replace(/ /g, ''),
-        example.principle.toLowerCase().replace(/-/g, ' ')
-      ];
-      variations.forEach(v => set.add(v));
+      // Add the principle itself and variations
+      const principle = example.principle.toLowerCase();
+      set.add(principle);
+      
+      // Extract the main principle word(s) for matching
+      // This handles cases like "Context Awareness" -> ["context", "awareness"]
+      const words = principle.split(/[\s-]+/);
+      words.forEach(word => {
+        if (word.length > 3) { // Only add meaningful words
+          set.add(word);
+        }
+      });
+      
+      // Add common variations
+      set.add(principle.replace(/ /g, ''));
+      set.add(principle.replace(/-/g, ' '));
+      set.add(principle.replace(/ & /g, ' '));
     });
     return set;
   }, [examples]);
@@ -89,9 +97,24 @@ export default function Home() {
     // Try to match based on principle names
     for (const example of examples) {
       const principleLower = example.principle.toLowerCase();
-      if (rowTextLower.includes(principleLower) ||
-          rowTextLower.includes(principleLower.replace(/ /g, '')) ||
-          rowTextLower.includes(principleLower.replace(/-/g, ' '))) {
+      
+      // Check for direct match first
+      if (rowTextLower.includes(principleLower)) {
+        matchedExample = example;
+        break;
+      }
+      
+      // Check if the main words from the principle appear in the row text
+      const principleWords = principleLower.split(/[\s&-]+/).filter(w => w.length > 3);
+      let wordsMatched = 0;
+      for (const word of principleWords) {
+        if (rowTextLower.includes(word)) {
+          wordsMatched++;
+        }
+      }
+      
+      // If all significant words match, we found it
+      if (wordsMatched === principleWords.length && principleWords.length > 0) {
         matchedExample = example;
         break;
       }

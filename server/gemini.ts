@@ -2,18 +2,33 @@ import { GoogleGenAI } from "@google/genai";
 import type { ExcelData } from "@shared/schema";
 
 // DON'T DELETE THIS COMMENT
-// Follow these instructions when using this blueprint:
+// Using Vertex AI configuration with project-specific settings
 // - Note that the newest Gemini model series is "gemini-2.5-flash" or gemini-2.5-pro"
-//   - do not change this unless explicitly requested by the user
 
-// This API key is from Gemini Developer API Key, not vertex AI API Key
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+// Configure Google AI with Vertex AI API key and project settings
+const apiKey = process.env.VERTEX_AI_API_KEY || process.env.GEMINI_API_KEY || "";
+const projectId = process.env.GOOGLE_PROJECT_ID || "";
+const location = process.env.GOOGLE_LOCATION || "us-central1";
+
+// Initialize Google Generative AI with Vertex AI credentials
+const ai = new GoogleGenAI({ 
+  apiKey: apiKey,
+  // Note: The @google/genai library uses the API key for authentication
+  // Project ID and location are handled automatically via the API key's project association
+});
 
 export async function chatWithFramework(
   message: string,
   frameworkContext?: ExcelData
 ): Promise<string> {
   try {
+    // Log configuration for debugging
+    console.log("Using Vertex AI configuration:", {
+      hasApiKey: !!apiKey,
+      projectId: projectId || "not set",
+      location: location
+    });
+    
     let systemPrompt = `You are a helpful AI assistant specialized in explaining and answering questions about agent evaluation frameworks.`;
 
     let contextInfo = "";

@@ -28,14 +28,14 @@ export default function Home() {
   });
 
   // Fetch examples data
-  const { data: examplesResponse } = useQuery<{ success: boolean; data: ConversationExample[] }>({
+  const { data: examplesResponse } = useQuery<{ success: boolean; data: { examples: ConversationExample[] } }>({
     queryKey: ["/api/examples"],
     retry: false,
     refetchOnWindowFocus: false,
   });
 
   const messages = chatHistoryResponse?.data || [];
-  const examples = examplesResponse?.data || [];
+  const examples = examplesResponse?.data?.examples || [];
 
   // Create a set of principles that have examples available
   const examplesAvailable = useMemo(() => {

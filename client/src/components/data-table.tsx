@@ -16,6 +16,11 @@ export function DataTable({ data }: DataTableProps) {
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
 
+  // Filter out the last two columns (__EMPTY_1 and __EMPTY_2)
+  const visibleHeaders = useMemo(() => {
+    return data.headers.filter(header => header !== "__EMPTY_1" && header !== "__EMPTY_2");
+  }, [data.headers]);
+
   const handleSort = (column: string) => {
     if (sortColumn === column) {
       if (sortDirection === "asc") {
@@ -90,7 +95,7 @@ export function DataTable({ data }: DataTableProps) {
           <table className="w-full border-collapse">
             <thead className="sticky top-0 bg-muted/50 backdrop-blur-sm z-10">
               <tr>
-                {data.headers.map((header, idx) => (
+                {visibleHeaders.map((header, idx) => (
                   <th
                     key={idx}
                     className="text-left px-4 py-3 font-semibold text-sm border-b"
@@ -125,7 +130,7 @@ export function DataTable({ data }: DataTableProps) {
                     className="border-b last:border-b-0 hover-elevate"
                     data-testid={`row-data-${rowIdx}`}
                   >
-                    {data.headers.map((header, colIdx) => (
+                    {visibleHeaders.map((header, colIdx) => (
                       <td
                         key={colIdx}
                         className="px-4 py-3 text-sm font-mono"
@@ -139,7 +144,7 @@ export function DataTable({ data }: DataTableProps) {
               ) : (
                 <tr>
                   <td
-                    colSpan={data.headers.length}
+                    colSpan={visibleHeaders.length}
                     className="px-4 py-12 text-center text-muted-foreground"
                   >
                     No results found

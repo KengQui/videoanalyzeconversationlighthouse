@@ -73,7 +73,7 @@ export default function Home() {
                 <div>
                   <h2 className="text-2xl font-semibold">Agent Evaluation Framework</h2>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {frameworkData?.rows.length || 0} evaluation criteria across {frameworkData?.headers.length || 0} milestones
+                    {frameworkData?.rows.length || 0} evaluation criteria across {Math.max(0, (frameworkData?.headers.length || 0) - 3) || 0} milestones
                   </p>
                 </div>
               </div>

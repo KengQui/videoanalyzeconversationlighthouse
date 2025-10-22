@@ -4,9 +4,15 @@
 
 The Agent Eval Framework Explorer is a web application designed to help users explore and analyze agent evaluation frameworks through an interactive interface. The application displays a hardcoded agent evaluation framework (197 criteria across 4 milestones) in an interactive data table and provides an AI-powered chatbot assistant to answer questions about the framework content.
 
-The application uses a dual-panel interface that balances data exploration with AI assistance, providing a clean, technical UI optimized for information-dense content.
+The application features a full-width data table with an AI assistant accessible via a slide-in panel, providing a clean, technical UI optimized for information-dense content.
 
 ## Recent Changes
+
+**October 22, 2025**: Converted chatbot to slide-in drawer interface
+- Chatbot now accessible via MessageSquare icon button in header
+- Slides in from the right side using Shadcn Sheet component (450px width)
+- Data table now uses full-width layout for better data visibility
+- Simplified interface removes dual-panel layout in favor of on-demand AI assistant
 
 **October 21, 2025**: Transitioned from file upload system to hardcoded framework data
 - Removed file upload UI and functionality  
@@ -27,7 +33,7 @@ Preferred communication style: Simple, everyday language.
 
 **UI Component Library**: shadcn/ui components built on top of Radix UI primitives, providing a comprehensive set of accessible, customizable components.
 
-**Styling**: Tailwind CSS with custom design tokens following a dual-theme (light/dark) approach. The design philosophy emphasizes technical clarity, data-first presentation, and split-focus efficiency with a dual-panel layout.
+**Styling**: Tailwind CSS with custom design tokens following a dual-theme (light/dark) approach. The design philosophy emphasizes technical clarity, data-first presentation, and on-demand AI assistance via slide-in drawer.
 
 **State Management**: TanStack Query (React Query) for server state management, with query caching and automatic refetching capabilities.
 

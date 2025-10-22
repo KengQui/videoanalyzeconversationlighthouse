@@ -9,7 +9,7 @@ import type { ExcelData, ChatMessage, ConversationExample } from "@shared/schema
 
 export default function Home() {
   const { toast } = useToast();
-  const [selectedExample, setSelectedExample] = useState<ConversationExample | null>(null);
+  const [selectedExamples, setSelectedExamples] = useState<ConversationExample[]>([]);
   const [examplesPanelOpen, setExamplesPanelOpen] = useState(false);
   const [selectedRowText, setSelectedRowText] = useState<string>("");
 
@@ -90,55 +90,70 @@ export default function Home() {
   const handleExampleClick = async (rowText: string) => {
     setSelectedRowText(rowText);
     
-    // Try to find a matching example based on the row text
+    // Find ALL matching examples based on the row text
     const rowTextLower = rowText.toLowerCase();
-    let matchedExample: ConversationExample | null = null;
-    let bestMatchScore = 0;
+    const matchedExamples: ConversationExample[] = [];
+    const exampleScores = new Map<string, number>();
     
     // Try to match based on principle names
     for (const example of examples) {
       const principleLower = example.principle.toLowerCase();
+      let matchScore = 0;
       
       // Check for direct match first (highest priority)
       if (rowTextLower.includes(principleLower)) {
-        matchedExample = example;
-        break;
-      }
-      
-      // Check if key words from the principle appear in the row text
-      const principleWords = principleLower.split(/[\s&-]+/).filter(w => w.length > 3);
-      let wordsMatched = 0;
-      for (const word of principleWords) {
-        if (rowTextLower.includes(word)) {
-          wordsMatched++;
+        matchScore = 1; // Perfect match
+      } else {
+        // Check if key words from the principle appear in the row text
+        const principleWords = principleLower.split(/[\s&-]+/).filter(w => w.length > 3);
+        let wordsMatched = 0;
+        for (const word of principleWords) {
+          if (rowTextLower.includes(word)) {
+            wordsMatched++;
+          }
         }
+        
+        // Calculate match score
+        matchScore = principleWords.length > 0 ? wordsMatched / principleWords.length : 0;
       }
-      
-      // Calculate match score
-      const matchScore = principleWords.length > 0 ? wordsMatched / principleWords.length : 0;
       
       // Accept partial matches (at least 50% of words match) or single important word matches
-      if (matchScore > bestMatchScore && (matchScore >= 0.5 || (wordsMatched === 1 && principleWords.length === 1))) {
-        bestMatchScore = matchScore;
-        matchedExample = example;
+      if (matchScore >= 0.5) {
+        exampleScores.set(example.id, matchScore);
+        matchedExamples.push(example);
       }
     }
     
-    // Special case: if row contains "context" or "define terms", match with Clarity example
-    if (!matchedExample && (rowTextLower.includes("context") || rowTextLower.includes("define") || rowTextLower.includes("terms"))) {
-      // Find a Clarity example
-      matchedExample = examples.find(e => e.principle.toLowerCase() === "clarity") || null;
+    // Special case: if row contains "context" or "define terms", also match with Clarity examples
+    if (rowTextLower.includes("context") || rowTextLower.includes("define") || rowTextLower.includes("terms")) {
+      // Find all Clarity examples that weren't already matched
+      const clarityExamples = examples.filter(e => 
+        e.principle.toLowerCase() === "clarity" && 
+        !exampleScores.has(e.id)
+      );
+      matchedExamples.push(...clarityExamples);
     }
     
-    // If we found a match, show it
-    if (matchedExample) {
-      setSelectedExample(matchedExample);
+    // Sort by match score (best matches first) and then by source to group them
+    matchedExamples.sort((a, b) => {
+      const scoreA = exampleScores.get(a.id) || 0;
+      const scoreB = exampleScores.get(b.id) || 0;
+      if (scoreA !== scoreB) {
+        return scoreB - scoreA; // Higher score first
+      }
+      // If scores are equal, group by source
+      return (a.source || "").localeCompare(b.source || "");
+    });
+    
+    // If we found matches, show them
+    if (matchedExamples.length > 0) {
+      setSelectedExamples(matchedExamples);
       setExamplesPanelOpen(true);
     } else {
       // No match found, show a message
       toast({
-        title: "No Example Found",
-        description: "No conversation design example is available for this item yet.",
+        title: "No Examples Found",
+        description: "No conversation design examples are available for this item yet.",
       });
     }
   };
@@ -189,7 +204,7 @@ export default function Home() {
       <ExamplesPanel
         open={examplesPanelOpen}
         onOpenChange={setExamplesPanelOpen}
-        example={selectedExample}
+        examples={selectedExamples}
         rowText={selectedRowText}
       />
     </div>

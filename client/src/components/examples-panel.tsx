@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { X, AlertCircle, CheckCircle, Info } from "lucide-react";
+import { X, AlertCircle, CheckCircle, Info, ChevronLeft, ChevronRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
@@ -14,39 +15,104 @@ import type { ConversationExample } from "@shared/schema";
 interface ExamplesPanelProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  example: ConversationExample | null;
+  examples: ConversationExample[];
   rowText?: string;
 }
 
-export function ExamplesPanel({ open, onOpenChange, example, rowText }: ExamplesPanelProps) {
-  if (!example) {
+export function ExamplesPanel({ open, onOpenChange, examples, rowText }: ExamplesPanelProps) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  
+  // Reset to first example when examples change
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [examples]);
+  
+  if (!examples || examples.length === 0) {
     return null;
   }
+  
+  const currentExample = examples[currentIndex];
+  const hasMultiple = examples.length > 1;
+  
+  const goToPrevious = () => {
+    setCurrentIndex((prev) => (prev > 0 ? prev - 1 : examples.length - 1));
+  };
+  
+  const goToNext = () => {
+    setCurrentIndex((prev) => (prev < examples.length - 1 ? prev + 1 : 0));
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-[600px] sm:max-w-[600px] overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>Conversation Design Examples</SheetTitle>
+          <div className="flex items-center justify-between">
+            <SheetTitle>Conversation Design Examples</SheetTitle>
+            {hasMultiple && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={goToPrevious}
+                  data-testid="button-previous-example"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  {currentIndex + 1} of {examples.length}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={goToNext}
+                  data-testid="button-next-example"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
         </SheetHeader>
 
         <div className="mt-6 space-y-6">
           {/* Principle and Score */}
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">{example.principle}</h3>
+            <h3 className="text-lg font-semibold">{currentExample.principle}</h3>
             <div className="flex items-center gap-2">
-              {example.score && (
+              {currentExample.score && (
                 <Badge variant="outline" className="text-sm">
-                  Score: {example.score}
+                  Score: {currentExample.score}
                 </Badge>
               )}
-              {example.source && (
-                <Badge variant="secondary" className="text-sm">
-                  {example.source}
+              {currentExample.source && (
+                <Badge variant="secondary" className="text-sm" data-testid="badge-source">
+                  {currentExample.source}
                 </Badge>
               )}
             </div>
           </div>
+          
+          {/* Show other available examples from different sources */}
+          {hasMultiple && (
+            <div className="bg-muted/30 p-3 rounded-lg">
+              <p className="text-sm font-medium mb-2">Available Examples:</p>
+              <div className="flex flex-wrap gap-2">
+                {examples.map((ex, idx) => (
+                  <Button
+                    key={ex.id}
+                    variant={idx === currentIndex ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentIndex(idx)}
+                    className="text-xs"
+                    data-testid={`button-example-${idx}`}
+                  >
+                    {ex.principle} 
+                    {ex.source && ` (${ex.source.replace(" agent", "")})`}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Context */}
           {rowText && (
@@ -67,7 +133,7 @@ export function ExamplesPanel({ open, onOpenChange, example, rowText }: Examples
             </div>
             <Card className="p-4 border-destructive/20 bg-destructive/5">
               <pre className="text-sm whitespace-pre-wrap font-mono">
-                {example.badExample}
+                {currentExample.badExample}
               </pre>
             </Card>
           </div>
@@ -80,7 +146,7 @@ export function ExamplesPanel({ open, onOpenChange, example, rowText }: Examples
             </div>
             <Card className="p-4 border-chart-4/20 bg-chart-4/5">
               <p className="text-sm leading-relaxed">
-                {example.whyItsBad}
+                {currentExample.whyItsBad}
               </p>
             </Card>
           </div>
@@ -93,10 +159,10 @@ export function ExamplesPanel({ open, onOpenChange, example, rowText }: Examples
               <CheckCircle className="h-5 w-5 text-chart-2" />
               <h4 className="font-semibold text-chart-2">Good Example</h4>
             </div>
-            {example.goodExample ? (
+            {currentExample.goodExample ? (
               <Card className="p-4 border-chart-2/20 bg-chart-2/5">
                 <pre className="text-sm whitespace-pre-wrap font-mono">
-                  {example.goodExample}
+                  {currentExample.goodExample}
                 </pre>
               </Card>
             ) : (
@@ -117,14 +183,14 @@ export function ExamplesPanel({ open, onOpenChange, example, rowText }: Examples
           </div>
 
           {/* Additional Notes */}
-          {example.additionalNotes && (
+          {currentExample.additionalNotes && (
             <>
               <Separator />
               <div className="space-y-3">
                 <h4 className="font-semibold">Additional Notes</h4>
                 <Card className="p-4 bg-muted/30">
                   <p className="text-sm text-muted-foreground">
-                    {example.additionalNotes}
+                    {currentExample.additionalNotes}
                   </p>
                 </Card>
               </div>

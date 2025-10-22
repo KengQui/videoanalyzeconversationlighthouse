@@ -1,12 +1,17 @@
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { DataTable } from "@/components/data-table";
 import { Header } from "@/components/header";
+import { ExamplesPanel } from "@/components/examples-panel";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { ExcelData, ChatMessage } from "@shared/schema";
+import type { ExcelData, ChatMessage, ConversationExample } from "@shared/schema";
 
 export default function Home() {
   const { toast } = useToast();
+  const [selectedExample, setSelectedExample] = useState<ConversationExample | null>(null);
+  const [examplesPanelOpen, setExamplesPanelOpen] = useState(false);
+  const [selectedRowText, setSelectedRowText] = useState<string>("");
 
   // Fetch framework data
   const { data: frameworkData, isLoading: isLoadingFramework } = useQuery<ExcelData | null>({
@@ -22,7 +27,32 @@ export default function Home() {
     refetchOnWindowFocus: false,
   });
 
+  // Fetch examples data
+  const { data: examplesResponse } = useQuery<{ success: boolean; data: ConversationExample[] }>({
+    queryKey: ["/api/examples"],
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
   const messages = chatHistoryResponse?.data || [];
+  const examples = examplesResponse?.data || [];
+
+  // Create a set of principles that have examples available
+  const examplesAvailable = useMemo(() => {
+    const set = new Set<string>();
+    examples.forEach(example => {
+      // Add the principle itself
+      set.add(example.principle.toLowerCase());
+      // Also add variations that might appear in the framework data
+      const variations = [
+        example.principle.toLowerCase(),
+        example.principle.toLowerCase().replace(/ /g, ''),
+        example.principle.toLowerCase().replace(/-/g, ' ')
+      ];
+      variations.forEach(v => set.add(v));
+    });
+    return set;
+  }, [examples]);
 
   // Chat mutation
   const chatMutation = useMutation({
@@ -47,6 +77,58 @@ export default function Home() {
 
   const handleSendMessage = (message: string) => {
     chatMutation.mutate(message);
+  };
+
+  const handleExampleClick = async (rowText: string) => {
+    setSelectedRowText(rowText);
+    
+    // Try to find a matching example based on the row text
+    const rowTextLower = rowText.toLowerCase();
+    let matchedExample: ConversationExample | null = null;
+    
+    // Try to match based on principle names
+    for (const example of examples) {
+      const principleLower = example.principle.toLowerCase();
+      if (rowTextLower.includes(principleLower) ||
+          rowTextLower.includes(principleLower.replace(/ /g, '')) ||
+          rowTextLower.includes(principleLower.replace(/-/g, ' '))) {
+        matchedExample = example;
+        break;
+      }
+    }
+    
+    // If we found a match, show it
+    if (matchedExample) {
+      setSelectedExample(matchedExample);
+      setExamplesPanelOpen(true);
+    } else {
+      // Try to fetch by principle name extracted from row text
+      try {
+        // Extract potential principle names from the row text
+        const words = rowText.split(/[\s,.-]+/).filter(w => w.length > 2);
+        for (const word of words) {
+          const response = await apiRequest("GET", `/api/examples/principle/${encodeURIComponent(word)}`);
+          if (response?.data) {
+            setSelectedExample(response.data);
+            setExamplesPanelOpen(true);
+            return;
+          }
+        }
+        
+        // If no match found, show a message
+        toast({
+          title: "No Example Found",
+          description: "No conversation design example is available for this item yet.",
+        });
+      } catch (error) {
+        console.error("Error fetching example:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load example. Please try again.",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
   return (
@@ -78,12 +160,26 @@ export default function Home() {
                 </div>
               </div>
               <div className="flex-1 overflow-auto">
-                {frameworkData && <DataTable data={frameworkData} />}
+                {frameworkData && (
+                  <DataTable 
+                    data={frameworkData} 
+                    onExampleClick={handleExampleClick}
+                    examplesAvailable={examplesAvailable}
+                  />
+                )}
               </div>
             </div>
           )}
         </div>
       </div>
+      
+      {/* Examples Panel */}
+      <ExamplesPanel
+        open={examplesPanelOpen}
+        onOpenChange={setExamplesPanelOpen}
+        example={selectedExample}
+        rowText={selectedRowText}
+      />
     </div>
   );
 }

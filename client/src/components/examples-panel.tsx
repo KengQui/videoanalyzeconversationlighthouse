@@ -34,11 +34,18 @@ export function ExamplesPanel({ open, onOpenChange, example, rowText }: Examples
           {/* Principle and Score */}
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">{example.principle}</h3>
-            {example.score && (
-              <Badge variant="outline" className="text-sm">
-                Score: {example.score}
-              </Badge>
-            )}
+            <div className="flex items-center gap-2">
+              {example.score && (
+                <Badge variant="outline" className="text-sm">
+                  Score: {example.score}
+                </Badge>
+              )}
+              {example.source && (
+                <Badge variant="secondary" className="text-sm">
+                  {example.source}
+                </Badge>
+              )}
+            </div>
           </div>
 
           {/* Context */}

@@ -57,3 +57,23 @@ export interface ChatResponse {
   message: string;
   timestamp: string;
 }
+
+// Conversation Design Examples schema
+export interface ConversationExample {
+  id: string;
+  principle: string; // e.g., "Clarity", "Brevity", "Context Awareness"
+  badExample: string;
+  whyItsBad: string;
+  goodExample: string | null; // null means "Need user input"
+  score?: string; // e.g., "2/5"
+  additionalNotes?: string;
+}
+
+export interface ExamplesData {
+  examples: ConversationExample[];
+}
+
+export interface ExampleMatchCriteria {
+  rowText: string; // Text in the row that matches this example
+  enabled: boolean; // Whether to show the book icon for this row
+}

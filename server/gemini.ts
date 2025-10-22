@@ -29,25 +29,40 @@ export async function chatWithFramework(
       location: location
     });
     
-    let systemPrompt = `You are a helpful AI assistant specialized in explaining and answering questions about agent evaluation frameworks.`;
+    // CUSTOMIZE YOUR PROMPT HERE
+    let systemPrompt = `You are an expert AI assistant specialized in agent evaluation frameworks. 
+    You help users understand evaluation criteria, milestones, and best practices for building conversational AI agents.
+    Be concise, practical, and focus on actionable insights.`;
 
     let contextInfo = "";
     if (frameworkContext) {
-      // Format framework data for context
-      contextInfo = `\n\nFramework Content:\n`;
-      contextInfo += `Headers: ${frameworkContext.headers.join(", ")}\n`;
-      contextInfo += `Number of rows: ${frameworkContext.rows.length}\n\n`;
-      contextInfo += `Sample data (first 5 rows):\n`;
+      // Format framework data for context - providing ALL rows for comprehensive analysis
+      contextInfo = `\n\nAgent Evaluation Framework Details:\n`;
+      contextInfo += `Total Evaluation Criteria: ${frameworkContext.rows.length}\n`;
+      contextInfo += `Milestones: ${frameworkContext.headers.filter(h => h !== "__EMPTY").join(", ")}\n\n`;
       
-      frameworkContext.rows.slice(0, 5).forEach((row, idx) => {
-        contextInfo += `Row ${idx + 1}:\n`;
+      // Provide complete framework data for better context
+      contextInfo += `Complete Framework Data:\n`;
+      contextInfo += `=====================================\n`;
+      
+      frameworkContext.rows.forEach((row, idx) => {
+        const criteriaName = row["__EMPTY"] || `Criteria ${idx + 1}`;
+        contextInfo += `\n${idx + 1}. ${criteriaName}\n`;
+        
         frameworkContext.headers.forEach(header => {
-          contextInfo += `  ${header}: ${row[header]}\n`;
+          if (header !== "__EMPTY" && row[header]) {
+            contextInfo += `   - ${header}: ${row[header]}\n`;
+          }
         });
-        contextInfo += "\n";
       });
 
-      systemPrompt += ` You have access to the user's framework data. Use this data to provide accurate, specific answers about their evaluation framework. Reference specific rows, columns, or values when relevant.`;
+      systemPrompt += ` You have complete access to all ${frameworkContext.rows.length} evaluation criteria across ${frameworkContext.headers.filter(h => h !== "__EMPTY").length} milestones.
+      When answering:
+      - Reference specific criteria by name and milestone when relevant
+      - Provide counts and statistics when asked
+      - Explain the progression from one milestone to the next
+      - Highlight patterns or themes in the evaluation framework
+      - Give practical examples of how to meet specific criteria`;
     } else {
       systemPrompt += ` The user hasn't uploaded framework data yet. Encourage them to upload their framework spreadsheet so you can provide specific assistance.`;
     }

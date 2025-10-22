@@ -90,26 +90,22 @@ export default function Home() {
   const handleExampleClick = async (rowText: string) => {
     setSelectedRowText(rowText);
     
-    // Debug logging
-    console.log("Clicked row text:", rowText);
-    console.log("Available examples:", examples.map(e => e.principle));
-    
     // Try to find a matching example based on the row text
     const rowTextLower = rowText.toLowerCase();
     let matchedExample: ConversationExample | null = null;
+    let bestMatchScore = 0;
     
     // Try to match based on principle names
     for (const example of examples) {
       const principleLower = example.principle.toLowerCase();
       
-      // Check for direct match first
+      // Check for direct match first (highest priority)
       if (rowTextLower.includes(principleLower)) {
-        console.log("Direct match found for:", example.principle);
         matchedExample = example;
         break;
       }
       
-      // Check if the main words from the principle appear in the row text
+      // Check if key words from the principle appear in the row text
       const principleWords = principleLower.split(/[\s&-]+/).filter(w => w.length > 3);
       let wordsMatched = 0;
       for (const word of principleWords) {
@@ -118,12 +114,20 @@ export default function Home() {
         }
       }
       
-      // If all significant words match, we found it
-      if (wordsMatched === principleWords.length && principleWords.length > 0) {
-        console.log("Word match found for:", example.principle, "Words:", principleWords);
+      // Calculate match score
+      const matchScore = principleWords.length > 0 ? wordsMatched / principleWords.length : 0;
+      
+      // Accept partial matches (at least 50% of words match) or single important word matches
+      if (matchScore > bestMatchScore && (matchScore >= 0.5 || (wordsMatched === 1 && principleWords.length === 1))) {
+        bestMatchScore = matchScore;
         matchedExample = example;
-        break;
       }
+    }
+    
+    // Special case: if row contains "context" or "define terms", match with Clarity example
+    if (!matchedExample && (rowTextLower.includes("context") || rowTextLower.includes("define") || rowTextLower.includes("terms"))) {
+      // Find a Clarity example
+      matchedExample = examples.find(e => e.principle.toLowerCase() === "clarity") || null;
     }
     
     // If we found a match, show it

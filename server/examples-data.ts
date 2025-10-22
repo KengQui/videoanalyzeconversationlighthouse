@@ -127,6 +127,124 @@ export const INITIAL_EXAMPLES_DATA: ExamplesData = {
       whyItsBad: `Heavy use of technical/UKG-specific terminology creates barriers for users unfamiliar with the system. Raises reading level and adds cognitive load.`,
       goodExample: null,
       additionalNotes: "Need user input for good example - should use plain language accessible to all users"
+    },
+    // New examples from Retirement Agent revision document
+    {
+      id: "context-awareness-3",
+      principle: "Context Awareness",
+      score: "0.5/5",
+      badExample: `AI: "What configuration do you want for employees?"\nAI: "Now, what configuration do you want for employers?"\n[Asks the same question twice instead of applying the same configuration]`,
+      whyItsBad: `Shows no awareness of context - asks the same question again for employer instead of intelligently asking if they follow the same configuration as employees. Creates unnecessary repetition and wastes user's time.`,
+      goodExample: `AI: "What configuration do you want for employees?"\nAI: "Should employers use the same configuration, or would you like to set different options?"`,
+      additionalNotes: "Reuse information intelligently to reduce repetitive questions"
+    },
+    {
+      id: "context-awareness-4",
+      principle: "Context Awareness",
+      score: "0.5/5",
+      badExample: `[Document clearly shows: "Vendor: Voya"]\nAI: "What is the vendor name for this retirement plan?"`,
+      whyItsBad: `AI fails to extract information from uploaded documents. Asks for vendor name despite "Voya" being clearly mentioned in the document. Also asks for minimum age when document states "Minimum age: 21".`,
+      goodExample: `AI: "I found in your document that the vendor is Voya and the minimum age is 21. Is this correct?"`,
+      additionalNotes: "Always extract and confirm available information from documents before asking users to re-enter it"
+    },
+    {
+      id: "clarity-4",
+      principle: "Clarity",
+      score: "1.5/5",
+      badExample: `AI: "What is the primary deduction type (rollup deduction)?"\nAI: "What is the additional deduction level (secondary deduction)?"`,
+      whyItsBad: `Uses UKG-specific technical terminology without explanation. "Primary deduction type" and "rollup deduction" are system terms that users won't understand. Should explain these mean which retirement plan is primary when employees have multiple plans.`,
+      goodExample: `AI: "If employees have multiple retirement plans, which should be the primary plan?"\nAI: "Do you have a secondary retirement plan to include?"`,
+      additionalNotes: "Translate system terminology into plain language users understand"
+    },
+    {
+      id: "clarity-5",
+      principle: "Clarity",
+      score: "1.5/5",
+      badExample: `AI: "What is the seniority date?"`,
+      whyItsBad: `Ambiguous term 'seniority date' can be interpreted different ways - hire date, promotion date, or vesting start date. No context or explanation provided.`,
+      goodExample: `AI: "What is the employee's original hire date? (This is the date they first started working at your company)"`,
+      additionalNotes: "Provide clear definitions and examples when asking for specific dates or terms that might be ambiguous"
+    },
+    {
+      id: "turn-taking-3",
+      principle: "Turn-Taking & Flow",
+      score: "1/5",
+      badExample: `AI: [Mixes eligibility questions with contribution questions randomly]\n"What's the minimum age?"\n"What's the Roth contribution limit?"\n"What's the service requirement?"\n"What's the max contribution percentage?"`,
+      whyItsBad: `No logical grouping - jumps between eligibility topics and contribution topics randomly. Should group related questions: Plan basics → Eligibility → Contributions → Deductions → Confirmation. Creates cognitive load from constant context switching.`,
+      goodExample: `AI: "Let's start with eligibility requirements:\n• Minimum age?\n• Service requirements?\n\nNow for contribution settings:\n• Roth contribution limit?\n• Maximum contribution percentage?"`,
+      additionalNotes: "Group related questions together to reduce cognitive load"
+    },
+    {
+      id: "turn-taking-4",
+      principle: "Turn-Taking & Flow", 
+      score: "1/5",
+      badExample: `AI: "When does eligibility begin?"\nAI: "Is there a waiting period for eligibility?"`,
+      whyItsBad: `Asks "WHEN does eligibility begin" before asking "IS THERE a waiting period" - this is backwards logic. Should first establish if there's a waiting period, then ask about timing.`,
+      goodExample: `AI: "Is there a waiting period for eligibility?"\n[If yes] → "How long is the waiting period?"\n[If no] → "When does eligibility begin?"`,
+      additionalNotes: "Follow logical question sequencing: prerequisites before details"
+    },
+    {
+      id: "consistency-2",
+      principle: "Consistency",
+      score: "1/5",
+      badExample: `AI: "401k contribution limits" [for one user]\nAI: "maximum allowable deferrals" [for another user]\n[Same concept, different phrasing]`,
+      whyItsBad: `Uses different terminology for the same concept across users, creating inconsistency and potential confusion. If AI constructs questions dynamically, it introduces variability and compliance risks in regulated areas like retirement configuration.`,
+      goodExample: `AI: [Always uses] "401k contribution limits"`,
+      additionalNotes: "Use consistent terminology across all users, especially for regulated compliance topics"
+    },
+    {
+      id: "empathy-tone-2",
+      principle: "Empathy & Tone",
+      score: "2/5",
+      badExample: `AI: "Configure the primary deduction type for the rollup deduction in the additional deduction level"`,
+      whyItsBad: `Uses technical UKG terminology without considering user's knowledge level. No warmth, no acknowledgment that users might be confused, no attempt to make technical concepts accessible.`,
+      goodExample: null,
+      additionalNotes: "Need user input for good example - should acknowledge complexity and guide users through it"
+    },
+    {
+      id: "proactive-guidance-3",
+      principle: "Proactive Guidance",
+      score: "0.5/5",
+      badExample: `AI: "First month/quarter/year..."\n[Options 2-6 shown without any context about what they mean]`,
+      whyItsBad: `Provides date options without explaining they relate to 'following waiting period'. In the UI this text appears when selected, but in conversation it's missing, leaving users confused about what these options mean.`,
+      goodExample: `AI: "When does the waiting period end?\n• First month following waiting period\n• First quarter following waiting period\n• First year following waiting period"`,
+      additionalNotes: "Always provide context for options, don't assume users understand implicit relationships"
+    },
+    {
+      id: "proactive-guidance-4",
+      principle: "Proactive Guidance",
+      score: "0.5/5",
+      badExample: `AI: "W2 pension box type: System Rules/Yes/No"\n[No explanation of when to use each]`,
+      whyItsBad: `Provides options without any guidance. Users don't understand that "System Rules" means check Box 13 only if employee contributed, "Yes" means always check for eligible employees, "No" means never check.`,
+      goodExample: `AI: "When should Box 13 'Retirement plan' be checked on W-2 forms?\n\n• System Rules: Check only if employee contributed or received employer contributions\n• Always (Yes): Check for all eligible employees, even if they didn't contribute\n• Never (No): Never check this box (for non-qualified plans)"`,
+      additionalNotes: "Explain what each option means and when to use it, especially for compliance-related choices"
+    },
+    {
+      id: "accessibility-2",
+      principle: "Accessibility & Inclusivity",
+      score: "1.5/5",
+      badExample: `AI: "What is the W2 pension box type for the primary deduction type?"`,
+      whyItsBad: `Heavy use of system-specific terminology creates barriers for users without retirement plan administration expertise. Grammatical errors and complex phrasing reduce accessibility for all users, especially those with language barriers.`,
+      goodExample: null,
+      additionalNotes: "Need user input for good example - should use plain language accessible to non-experts"
+    },
+    {
+      id: "confirmation-feedback-2",
+      principle: "Confirmation & Feedback",
+      score: "2/5",
+      badExample: `AI: [Provides recommendations before all questions are asked]\nAI: "I recommend setting up Option A"\nAI: "Oh wait, one more question..."`,
+      whyItsBad: `Provides recommendations prematurely before gathering all necessary information. Should confirm complete understanding before making suggestions.`,
+      goodExample: `AI: [Asks all clarifying questions first]\nAI: "Based on all your requirements, I recommend..."`,
+      additionalNotes: "Gather all information before making recommendations"
+    },
+    {
+      id: "brevity-2",
+      principle: "Brevity",
+      score: "2.5/5",
+      badExample: `AI: "The maximum employee contribution percentage is 100%. Now, regarding the W2 pension box type configuration..."`,
+      whyItsBad: `Includes unrelated information (contribution limits) right before asking about W2 configuration. These are unrelated topics that confuse users and add unnecessary verbosity.`,
+      goodExample: null,
+      additionalNotes: "Need user input for good example - keep topics separate and focused"
     }
   ]
 };

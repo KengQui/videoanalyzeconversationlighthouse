@@ -27,7 +27,8 @@ export function DataTable({ data, onExampleClick, examplesAvailable = new Set() 
   const hasExample = (row: ExcelRow): boolean => {
     const firstColumnText = String(row[data.headers[0]] || "").toLowerCase();
     // Check if this row text matches any available examples
-    for (const exampleKey of examplesAvailable) {
+    const exampleKeys = Array.from(examplesAvailable);
+    for (const exampleKey of exampleKeys) {
       if (firstColumnText.includes(exampleKey.toLowerCase())) {
         return true;
       }

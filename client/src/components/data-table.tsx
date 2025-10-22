@@ -151,7 +151,7 @@ export function DataTable({ data, onExampleClick, examplesAvailable = new Set() 
                       <Button
                         variant="ghost"
                         size="icon"
-                        className={`h-8 w-8 ${hasExample(row) ? '' : 'opacity-30 cursor-not-allowed'}`}
+                        className={`h-8 w-8 ${hasExample(row) ? 'text-chart-2 hover:text-chart-2' : 'opacity-30 cursor-not-allowed'}`}
                         onClick={() => {
                           if (hasExample(row) && onExampleClick) {
                             onExampleClick(String(row[data.headers[0]] || ""));

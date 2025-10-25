@@ -181,10 +181,16 @@ export async function analyzeVideoWithGemini(
     }
 
     console.log(`Analyzing video against ${criteria.length} Conversation Design criteria for Milestone ${milestone}`);
+    console.log(`⏳ Step 1/3: Reading video file...`);
 
     // Read the video file and convert to base64
     const videoBuffer = await fs.readFile(videoPath);
     const videoBase64 = videoBuffer.toString('base64');
+    const fileSizeMB = (videoBuffer.length / 1024 / 1024).toFixed(2);
+    console.log(`✓ Video file loaded (${fileSizeMB}MB)`);
+    console.log(`⏳ Step 2/3: Encoding video for AI analysis...`);
+    console.log(`✓ Video encoded and ready`);
+    console.log(`⏳ Step 3/3: Sending to Gemini AI for analysis (this may take 2-5 minutes)...`);
 
     // Create the evaluation prompt
     const prompt = `You are an expert in conversational AI design. Analyze this video of an AI conversation interface against the following Conversation Design criteria from Milestone ${milestone} of our evaluation framework.
@@ -227,6 +233,7 @@ Example format:
 Provide your evaluation as a JSON array only, no other text.`;
 
     // Send to Gemini with video
+    const startTime = Date.now();
     const response = await ai.models.generateContent({
       model: "gemini-2.0-flash-exp",
       contents: [{
@@ -243,11 +250,16 @@ Provide your evaluation as a JSON array only, no other text.`;
       }]
     });
 
+    const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
+    console.log(`✓ AI analysis completed in ${elapsedTime}s`);
+
     const responseText = response.text?.trim() || "";
     
     if (!responseText) {
       throw new Error("Gemini returned an empty response");
     }
+    
+    console.log(`⏳ Parsing AI response...`);
 
     // Parse the JSON response
     // Remove markdown code blocks if present
@@ -278,7 +290,8 @@ Provide your evaluation as a JSON array only, no other text.`;
         }
       }
 
-      console.log(`Successfully analyzed video, received ${evaluations.length} evaluations`);
+      console.log(`✓ Successfully analyzed video, received ${evaluations.length} evaluations`);
+      console.log(`🎉 Analysis complete! All ${evaluations.length} criteria evaluated.`);
       return evaluations;
 
     } catch (parseError: any) {

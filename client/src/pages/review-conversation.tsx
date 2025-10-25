@@ -139,7 +139,7 @@ export default function ReviewConversation() {
     switch (stage) {
       case "uploading": return "Uploading video...";
       case "compressing": return "Compressing video to optimal size...";
-      case "analyzing": return "Analyzing with AI (this may take a minute)...";
+      case "analyzing": return "Analyzing with AI (2-5 minutes depending on video length)...";
       case "completed": return "Analysis complete!";
       case "error": return "Analysis failed";
       default: return "";
@@ -351,12 +351,19 @@ End of Report
       {stage !== "idle" && stage !== "error" && (
         <Card className="mb-6">
           <CardContent className="pt-6">
-            <div className="space-y-2">
+            <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
                 <span className="font-medium">{getStageText()}</span>
                 <span className="text-muted-foreground">{getProgressValue()}%</span>
               </div>
               <Progress value={getProgressValue()} data-testid="progress-analysis" />
+              {stage === "analyzing" && (
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <p>• The AI is watching your video and evaluating each criterion</p>
+                  <p>• Generating specific examples with timestamps</p>
+                  <p>• This process cannot be interrupted - please keep this tab open</p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

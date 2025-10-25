@@ -1,12 +1,16 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { Upload, CheckCircle2, AlertCircle, Star, Download } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Upload, CheckCircle2, AlertCircle, Star, Download, FileText, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import type { VideoAnalysisResult, CriterionEvaluation } from "@shared/schema";
+import { Header } from "@/components/header";
+import { Chatbot } from "@/components/chatbot";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import type { VideoAnalysisResult, CriterionEvaluation, ChatMessage, ExcelData } from "@shared/schema";
 
 type AnalysisStage = "idle" | "uploading" | "compressing" | "analyzing" | "completed" | "error";
 
@@ -16,6 +20,24 @@ export default function ReviewConversation() {
   const [milestone, setMilestone] = useState<string>("1");
   const [stage, setStage] = useState<AnalysisStage>("idle");
   const [results, setResults] = useState<VideoAnalysisResult | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [showInlineReport, setShowInlineReport] = useState(false);
+
+  // Fetch framework data for chat
+  const { data: frameworkData } = useQuery<ExcelData | null>({
+    queryKey: ["/api/framework"],
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
+  // Fetch chat history
+  const { data: chatHistoryResponse } = useQuery<{ success: boolean; data: ChatMessage[] }>({
+    queryKey: ["/api/chat/history"],
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
+  const messages = chatHistoryResponse?.data || [];
 
   const analyzeMutation = useMutation({
     mutationFn: async ({ file, milestone }: { file: File; milestone: number }) => {
@@ -214,14 +236,44 @@ End of Report
     });
   };
 
+  const handleSendMessage = async (message: string) => {
+    try {
+      await apiRequest("POST", "/api/chat", {
+        message,
+        context: frameworkData,
+      });
+      await queryClient.invalidateQueries({ queryKey: ["/api/chat/history"] });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to send message",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const toggleInlineReport = () => {
+    setShowInlineReport(!showInlineReport);
+  };
+
   return (
-    <div className="container mx-auto p-6 max-w-6xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Review AI Conversation</h1>
-        <p className="text-muted-foreground">
-          Upload a video of an AI conversation to evaluate it against Conversation Design criteria.
-        </p>
-      </div>
+    <div className="h-screen flex flex-col overflow-hidden">
+      <Header
+        messages={messages}
+        onSendMessage={handleSendMessage}
+        hasFrameworkData={!!frameworkData}
+        chatOpen={chatOpen}
+        setChatOpen={setChatOpen}
+      />
+      <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 overflow-auto">
+          <div className="container mx-auto p-6 max-w-6xl">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">Review AI Conversation</h1>
+          <p className="text-muted-foreground">
+            Upload a video of an AI conversation to evaluate it against Conversation Design criteria.
+          </p>
+        </div>
 
       {/* Upload Section */}
       <Card className="mb-6">
@@ -332,11 +384,76 @@ End of Report
                 Evaluation Results - Milestone {results.milestone}
               </h2>
             </div>
-            <Button onClick={generateReport} variant="outline" data-testid="button-download-report">
-              <Download className="h-4 w-4 mr-2" />
-              Download Report
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={toggleInlineReport} variant="outline" data-testid="button-view-report">
+                <FileText className="h-4 w-4 mr-2" />
+                {showInlineReport ? "Hide Report" : "View Report"}
+              </Button>
+              <Button onClick={generateReport} variant="outline" data-testid="button-download-report">
+                <Download className="h-4 w-4 mr-2" />
+                Download Report
+              </Button>
+            </div>
           </div>
+
+          {/* Inline Report Display */}
+          {showInlineReport && (
+            <Card className="mb-6 bg-muted/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Evaluation Report
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <h3 className="font-semibold mb-2">Executive Summary</h3>
+                  <div className="grid gap-2 text-sm">
+                    <p><span className="font-medium">Generated:</span> {new Date().toLocaleDateString()} {new Date().toLocaleTimeString()}</p>
+                    <p><span className="font-medium">Milestone:</span> {results.milestone}</p>
+                    <p><span className="font-medium">Video File:</span> {selectedFile?.name || 'N/A'}</p>
+                    <p><span className="font-medium">Average Rating:</span> {(results.evaluations.reduce((sum, e) => sum + e.rating, 0) / results.evaluations.length).toFixed(1)}/5.0</p>
+                  </div>
+                </div>
+                
+                <Separator />
+                
+                <div>
+                  <h3 className="font-semibold mb-2">Recommendations</h3>
+                  {results.evaluations.filter(e => e.rating < 3).length > 0 && (
+                    <div className="mb-3">
+                      <h4 className="text-sm font-medium text-destructive mb-1">Priority Areas for Improvement:</h4>
+                      <ul className="list-disc list-inside space-y-1 text-sm">
+                        {results.evaluations
+                          .filter(e => e.rating < 3)
+                          .map((e, i) => (
+                            <li key={i} className="text-muted-foreground">
+                              {e.criterion} <span className="text-destructive">(Rating: {e.rating}/5)</span>
+                            </li>
+                          ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {results.evaluations.filter(e => e.rating >= 4).length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-medium text-green-600 dark:text-green-400 mb-1">Strengths to Maintain:</h4>
+                      <ul className="list-disc list-inside space-y-1 text-sm">
+                        {results.evaluations
+                          .filter(e => e.rating >= 4)
+                          .slice(0, 5)
+                          .map((e, i) => (
+                            <li key={i} className="text-muted-foreground">
+                              {e.criterion} <span className="text-green-600 dark:text-green-400">(Rating: {e.rating}/5)</span>
+                            </li>
+                          ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <div className="grid gap-4">
             {results.evaluations.map((evaluation, index) => (
@@ -413,6 +530,34 @@ End of Report
           </Card>
         </div>
       )}
+          </div>
+        </div>
+
+        {/* Chat Panel */}
+        {chatOpen && (
+          <div className="w-[450px] bg-background border-l flex flex-col shrink-0">
+            <div className="px-6 py-4 border-b flex items-center justify-between">
+              <h2 className="text-lg font-semibold">AI Assistant</h2>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setChatOpen(false)}
+                data-testid="button-close-chat"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <Chatbot
+                messages={messages}
+                onSendMessage={handleSendMessage}
+                hasFrameworkData={!!frameworkData}
+                variant="default"
+              />
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

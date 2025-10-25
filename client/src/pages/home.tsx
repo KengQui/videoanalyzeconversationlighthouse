@@ -176,39 +176,6 @@ export default function Home() {
 
       <div className="container mx-auto px-4 py-6 bg-background h-[calc(100vh-64px)]">
         <div className="flex gap-4 h-full overflow-hidden">
-          {/* Chat Panel */}
-          <div
-            className={cn(
-              "transition-all duration-300 ease-in-out overflow-hidden",
-              chatOpen ? "w-[450px]" : "w-0"
-            )}
-          >
-            {chatOpen && (
-              <div className="h-full bg-background border-r flex flex-col shrink-0 w-[450px]">
-                <div className="px-6 py-4 border-b flex items-center justify-between">
-                  <h2 className="text-lg font-semibold">AI Assistant</h2>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setChatOpen(false)}
-                    data-testid="button-close-chat"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="flex-1 overflow-hidden">
-                  <Chatbot
-                    messages={messages}
-                    onSendMessage={handleSendMessage}
-                    isLoading={chatMutation.isPending || isLoadingChat}
-                    hasFrameworkData={!!frameworkData}
-                    variant="default"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-
           {/* Main content area */}
           <div 
             className={cn(
@@ -251,6 +218,39 @@ export default function Home() {
                 examples={selectedExamples}
                 rowText={selectedRowText}
               />
+            )}
+          </div>
+
+          {/* Chat Panel */}
+          <div
+            className={cn(
+              "transition-all duration-300 ease-in-out overflow-hidden",
+              chatOpen ? "w-[450px]" : "w-0"
+            )}
+          >
+            {chatOpen && (
+              <div className="h-full bg-background border-l flex flex-col shrink-0 w-[450px]">
+                <div className="px-6 py-4 border-b flex items-center justify-between">
+                  <h2 className="text-lg font-semibold">AI Assistant</h2>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setChatOpen(false)}
+                    data-testid="button-close-chat"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <Chatbot
+                    messages={messages}
+                    onSendMessage={handleSendMessage}
+                    isLoading={chatMutation.isPending || isLoadingChat}
+                    hasFrameworkData={!!frameworkData}
+                    variant="default"
+                  />
+                </div>
+              </div>
             )}
           </div>
         </div>

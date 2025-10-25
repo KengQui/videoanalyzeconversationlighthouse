@@ -221,6 +221,8 @@ ${criteria.map((c, i) => `${i + 1}. ${c}`).join('\n')}
 - rating: A number from 1-5
 - feedback: Detailed text feedback with specific video examples and timestamps
 
+**CRITICAL:** Use only standard ASCII quotes (" and ') in your response - no smart quotes, curly quotes, or special unicode characters. Use only regular ASCII punctuation.
+
 Example format:
 [
   {
@@ -269,10 +271,13 @@ Provide your evaluation as a JSON array only, no other text.`;
     jsonText = jsonText.replace(/\s*```\s*$/, '');
     jsonText = jsonText.trim();
     
-    // Replace smart quotes with regular quotes to fix JSON parsing
-    jsonText = jsonText.replace(/[\u2018\u2019]/g, "'"); // Replace smart single quotes
-    jsonText = jsonText.replace(/[\u201C\u201D]/g, '"'); // Replace smart double quotes
-    jsonText = jsonText.replace(/[\u2013\u2014]/g, '-'); // Replace em/en dashes
+    // Replace ALL types of smart quotes and special characters
+    jsonText = jsonText
+      .replace(/[\u2018\u2019\u201A\u201B]/g, "'")  // All single quote variants
+      .replace(/[\u201C\u201D\u201E\u201F]/g, '"')  // All double quote variants
+      .replace(/[\u2013\u2014]/g, '-')              // Em/en dashes
+      .replace(/\u2026/g, '...')                    // Ellipsis
+      .replace(/[\u2010\u2011\u2012]/g, '-');       // Other dash types
 
     try {
       const evaluations: CriterionEvaluation[] = JSON.parse(jsonText);

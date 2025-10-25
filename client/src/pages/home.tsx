@@ -178,13 +178,6 @@ export default function Home() {
             </div>
           ) : (
             <div className="flex flex-col gap-4 h-full overflow-hidden">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {frameworkData?.rows.length || 0} evaluation criteria across {Math.max(0, (frameworkData?.headers.length || 0) - 3) || 0} milestones
-                  </p>
-                </div>
-              </div>
               <div className="flex-1 overflow-auto">
                 {frameworkData && (
                   <DataTable 

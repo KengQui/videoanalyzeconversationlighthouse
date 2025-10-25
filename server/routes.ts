@@ -1,8 +1,37 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import multer from "multer";
+import * as fs from "fs/promises";
+import * as path from "path";
 import { storage } from "./storage";
 import { chatWithFramework } from "./gemini";
-import type { ChatRequest, ChatResponse, ConversationExample } from "@shared/schema";
+import { compressVideo, analyzeVideoWithGemini, isValidVideo } from "./video-analysis";
+import type { ChatRequest, ChatResponse, ConversationExample, VideoAnalysisResult } from "@shared/schema";
+
+// Configure multer for video uploads
+const upload = multer({
+  dest: "/tmp/video-uploads",
+  limits: {
+    fileSize: 500 * 1024 * 1024, // 500MB max upload size
+  },
+  fileFilter: (req, file, cb) => {
+    // Accept video files
+    const allowedMimeTypes = [
+      'video/mp4',
+      'video/mpeg',
+      'video/quicktime',
+      'video/x-msvideo',
+      'video/webm',
+      'video/x-matroska'
+    ];
+    
+    if (allowedMimeTypes.includes(file.mimetype) || file.mimetype.startsWith('video/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only video files are allowed'));
+    }
+  }
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get current framework data
@@ -142,6 +171,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Add example error:", error);
       res.status(500).json({ success: false, message: "Failed to add example" });
+    }
+  });
+
+  // Analyze video against Conversation Design criteria
+  app.post("/api/video/analyze", upload.single("video"), async (req, res) => {
+    let uploadedFilePath: string | undefined;
+    let compressedFilePath: string | undefined;
+
+    try {
+      // Validate file upload
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          error: "No video file uploaded"
+        });
+      }
+
+      uploadedFilePath = req.file.path;
+
+      // Validate milestone parameter
+      const milestone = parseInt(req.body.milestone);
+      if (!milestone || milestone < 1 || milestone > 4) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid milestone. Must be between 1 and 4"
+        });
+      }
+
+      console.log(`Processing video upload: ${req.file.originalname} (${(req.file.size / 1024 / 1024).toFixed(2)}MB) for Milestone ${milestone}`);
+
+      // Validate video file
+      const isValid = await isValidVideo(uploadedFilePath);
+      if (!isValid) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid video file. Please upload a valid video file."
+        });
+      }
+
+      // Compress video
+      compressedFilePath = path.join("/tmp/video-uploads", `compressed-${Date.now()}.mp4`);
+      await compressVideo(uploadedFilePath, compressedFilePath);
+
+      // Analyze with Gemini
+      const evaluations = await analyzeVideoWithGemini(compressedFilePath, milestone);
+
+      const result: VideoAnalysisResult = {
+        success: true,
+        milestone,
+        evaluations
+      };
+
+      res.json(result);
+
+    } catch (error: any) {
+      console.error("Video analysis error:", error);
+      res.status(500).json({
+        success: false,
+        milestone: parseInt(req.body.milestone) || 0,
+        evaluations: [],
+        error: error.message || "Failed to analyze video"
+      });
+    } finally {
+      // Clean up temporary files
+      try {
+        if (uploadedFilePath) {
+          await fs.unlink(uploadedFilePath);
+        }
+        if (compressedFilePath) {
+          await fs.unlink(compressedFilePath);
+        }
+      } catch (cleanupError) {
+        console.error("Error cleaning up temporary files:", cleanupError);
+      }
     }
   });
 

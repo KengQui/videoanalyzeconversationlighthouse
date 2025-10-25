@@ -78,3 +78,21 @@ export interface ExampleMatchCriteria {
   rowText: string; // Text in the row that matches this example
   enabled: boolean; // Whether to show the book icon for this row
 }
+
+// Video Analysis schema
+export interface CriterionEvaluation {
+  criterion: string; // The criterion name from the framework
+  rating: number; // 1-5 rating
+  feedback: string; // Detailed feedback for this criterion
+}
+
+export interface VideoAnalysisRequest {
+  milestone: number; // 1, 2, 3, or 4
+}
+
+export interface VideoAnalysisResult {
+  success: boolean;
+  milestone: number;
+  evaluations: CriterionEvaluation[];
+  error?: string;
+}

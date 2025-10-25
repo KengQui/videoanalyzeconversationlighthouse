@@ -1,6 +1,13 @@
-import { FileSpreadsheet, MessageSquare } from "lucide-react";
+import { FileSpreadsheet, MessageSquare, Menu } from "lucide-react";
+import { Link, useLocation } from "wouter";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { ChatMessage } from "@shared/schema";
 
 interface HeaderProps {
@@ -20,12 +27,41 @@ export function Header({
   chatOpen,
   setChatOpen,
 }: HeaderProps) {
+  const [location] = useLocation();
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-card backdrop-blur supports-[backdrop-filter]:bg-card/95">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                data-testid="button-menu"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem asChild>
+                <Link href="/" data-testid="link-agent-eval">
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  Agent Eval Framework
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/review" data-testid="link-review-conversation">
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Review AI Conversation
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <FileSpreadsheet className="h-6 w-6 text-primary" />
-          <h1 className="text-xl font-bold">Agent Eval Framework</h1>
+          <h1 className="text-xl font-bold">
+            {location === "/" ? "Agent Eval Framework" : "Review AI Conversation"}
+          </h1>
         </div>
 
         <div className="flex items-center gap-2">

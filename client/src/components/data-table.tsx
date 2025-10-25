@@ -30,6 +30,13 @@ export function DataTable({ data, onExampleClick, examplesAvailable = new Set() 
     return true;
   };
 
+  // Check if a section header is a main section (one of the 4 top-level categories)
+  const isMainSection = (row: ExcelRow): boolean => {
+    if (!isSectionHeader(row)) return false;
+    const headerText = String(row[data.headers[0]] || "").trim();
+    return ["Orchestrator", "Agent - data handling", "Conversation Design", "Performance Targets"].includes(headerText);
+  };
+
   // Check if a row has examples available based on its first column text
   const hasExample = (row: ExcelRow): boolean => {
     // Section headers never have examples
@@ -103,10 +110,17 @@ export function DataTable({ data, onExampleClick, examplesAvailable = new Set() 
               {filteredData.length > 0 ? (
                 filteredData.map((row, rowIdx) => {
                   const isHeader = isSectionHeader(row);
+                  const isMain = isMainSection(row);
+                  const rowClassName = isMain 
+                    ? 'bg-muted' // Darker background for main sections
+                    : isHeader 
+                      ? 'bg-muted/30' // Lighter background for subsections
+                      : 'hover-elevate'; // Default for regular rows
+                  
                   return (
                     <tr
                       key={rowIdx}
-                      className={`border-b last:border-b-0 ${isHeader ? 'bg-muted/50' : 'hover-elevate'}`}
+                      className={`border-b last:border-b-0 ${rowClassName}`}
                       data-testid={`row-data-${rowIdx}`}
                     >
                       <td className="px-3 py-3 text-sm w-12">
@@ -130,7 +144,7 @@ export function DataTable({ data, onExampleClick, examplesAvailable = new Set() 
                     {visibleHeaders.map((header, colIdx) => (
                       <td
                         key={colIdx}
-                        className="px-4 py-3 text-sm font-mono"
+                        className={`px-4 py-3 text-sm font-mono ${isMain && colIdx === 0 ? 'font-bold' : ''}`}
                         data-testid={`cell-${rowIdx}-${colIdx}`}
                       >
                         {String(row[header] ?? "")}

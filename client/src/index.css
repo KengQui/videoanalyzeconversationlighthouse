@@ -59,6 +59,11 @@
   --muted: 0deg 0% 98.43%;
 
   --muted-foreground: 0deg 0% 40%;
+  
+  /* Section background colors for better visual hierarchy */
+  --section-main: 210 20% 96%;  /* Light blue-gray for main sections */
+  --section-sub: 210 15% 98%;   /* Very light blue-gray for subsections */
+  --section-hover: 210 10% 99%; /* Subtle hover state */
 
   --accent: 0deg 0% 94.9%;
 
@@ -177,6 +182,11 @@
   --muted: 0 0% 9.4118%;
 
   --muted-foreground: 210 3.3898% 46.2745%;
+  
+  /* Section background colors for better visual hierarchy */
+  --section-main: 210 20% 14%;  /* Dark blue-gray for main sections */
+  --section-sub: 210 15% 11%;   /* Darker blue-gray for subsections */
+  --section-hover: 210 10% 10%; /* Subtle hover state */
 
   --accent: 205.7143 70% 7.8431%;
 

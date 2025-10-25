@@ -192,5 +192,5 @@ export function Chatbot({
     return <div className="flex flex-col h-full">{content}</div>;
   }
 
-  return <Card className="flex flex-col h-full">{content}</Card>;
+  return <Card className="flex flex-col h-full bg-card border-card-border">{content}</Card>;
 }

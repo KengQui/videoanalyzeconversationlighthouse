@@ -81,6 +81,11 @@ export default {
           busy: "rgb(239 68 68)",
           offline: "rgb(156 163 175)",
         },
+        section: {
+          main: "hsl(var(--section-main) / <alpha-value>)",
+          sub: "hsl(var(--section-sub) / <alpha-value>)",
+          hover: "hsl(var(--section-hover) / <alpha-value>)",
+        },
       },
       fontFamily: {
         sans: ["var(--font-sans)"],

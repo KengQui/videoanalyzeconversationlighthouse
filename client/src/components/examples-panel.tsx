@@ -94,7 +94,7 @@ export function ExamplesPanel({ open, onOpenChange, examples, rowText }: Example
           
           {/* Show other available examples from different sources */}
           {hasMultiple && (
-            <div className="bg-muted/30 p-3 rounded-lg">
+            <div className="bg-section-sub p-3 rounded-lg">
               <p className="text-sm font-medium mb-2">Available Examples:</p>
               <div className="flex flex-wrap gap-2">
                 {examples.map((ex, idx) => (
@@ -116,7 +116,7 @@ export function ExamplesPanel({ open, onOpenChange, examples, rowText }: Example
 
           {/* Context */}
           {rowText && (
-            <div className="bg-muted/50 p-3 rounded-lg">
+            <div className="bg-section-main p-3 rounded-lg">
               <p className="text-sm text-muted-foreground">
                 <strong>Framework Item:</strong> {rowText}
               </p>
@@ -131,7 +131,7 @@ export function ExamplesPanel({ open, onOpenChange, examples, rowText }: Example
               <AlertCircle className="h-5 w-5 text-destructive" />
               <h4 className="font-semibold text-destructive">Bad Example</h4>
             </div>
-            <Card className="p-4 border-destructive/20 bg-destructive/5">
+            <Card className="p-4 border-destructive/20 bg-destructive/5 backdrop-blur-sm">
               <pre className="text-sm whitespace-pre-wrap font-mono">
                 {currentExample.badExample}
               </pre>
@@ -144,7 +144,7 @@ export function ExamplesPanel({ open, onOpenChange, examples, rowText }: Example
               <Info className="h-5 w-5 text-chart-4" />
               <h4 className="font-semibold">Why This Is Problematic</h4>
             </div>
-            <Card className="p-4 border-chart-4/20 bg-chart-4/5">
+            <Card className="p-4 border-chart-4/20 bg-chart-4/5 backdrop-blur-sm">
               <p className="text-sm leading-relaxed">
                 {currentExample.whyItsBad}
               </p>
@@ -160,7 +160,7 @@ export function ExamplesPanel({ open, onOpenChange, examples, rowText }: Example
               <h4 className="font-semibold text-chart-2">Good Example</h4>
             </div>
             {currentExample.goodExample ? (
-              <Card className="p-4 border-chart-2/20 bg-chart-2/5">
+              <Card className="p-4 border-chart-2/20 bg-chart-2/5 backdrop-blur-sm">
                 <pre className="text-sm whitespace-pre-wrap font-mono">
                   {currentExample.goodExample}
                 </pre>
@@ -188,7 +188,7 @@ export function ExamplesPanel({ open, onOpenChange, examples, rowText }: Example
               <Separator />
               <div className="space-y-3">
                 <h4 className="font-semibold">Additional Notes</h4>
-                <Card className="p-4 bg-muted/30">
+                <Card className="p-4 bg-section-sub backdrop-blur-sm">
                   <p className="text-sm text-muted-foreground">
                     {currentExample.additionalNotes}
                   </p>

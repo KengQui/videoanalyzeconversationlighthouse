@@ -88,10 +88,10 @@ export function DataTable({ data, onExampleClick, examplesAvailable = new Set() 
       </div>
 
       {/* Table */}
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden bg-card border-card-border">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
-            <thead className="sticky top-0 bg-muted/50 backdrop-blur-sm z-10">
+            <thead className="sticky top-0 bg-muted backdrop-blur-sm z-10">
               <tr>
                 <th className="text-left px-3 py-3 font-semibold text-sm border-b w-12">
                   {/* Empty header for examples column */}
@@ -112,10 +112,10 @@ export function DataTable({ data, onExampleClick, examplesAvailable = new Set() 
                   const isHeader = isSectionHeader(row);
                   const isMain = isMainSection(row);
                   const rowClassName = isMain 
-                    ? 'bg-muted' // Darker background for main sections
+                    ? 'bg-section-main font-semibold' // Distinct blue-gray background for main sections
                     : isHeader 
-                      ? 'bg-muted/30' // Lighter background for subsections
-                      : 'hover-elevate'; // Default for regular rows
+                      ? 'bg-section-sub' // Lighter background for subsections
+                      : 'hover:bg-section-hover transition-colors'; // Subtle hover for regular rows
                   
                   return (
                     <tr

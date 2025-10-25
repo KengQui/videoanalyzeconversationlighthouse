@@ -167,7 +167,7 @@ export default function Home() {
         hasFrameworkData={!!frameworkData}
       />
 
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto px-4 py-6 bg-background">
         <div className="flex flex-col gap-6 h-[calc(100vh-120px)]">
           {isLoadingFramework ? (
             <div className="flex items-center justify-center h-full">

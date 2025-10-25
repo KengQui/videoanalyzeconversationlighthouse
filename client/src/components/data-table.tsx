@@ -19,8 +19,24 @@ export function DataTable({ data, onExampleClick, examplesAvailable = new Set() 
     return data.headers.filter(header => header !== "__EMPTY_1" && header !== "__EMPTY_2");
   }, [data.headers]);
 
+  // Check if a row is a section header (all milestone columns are empty)
+  const isSectionHeader = (row: ExcelRow): boolean => {
+    // Check if all columns except the first one (criteria name) are empty
+    for (let i = 1; i < visibleHeaders.length; i++) {
+      if (row[visibleHeaders[i]] !== "" && row[visibleHeaders[i]] !== null && row[visibleHeaders[i]] !== undefined) {
+        return false;
+      }
+    }
+    return true;
+  };
+
   // Check if a row has examples available based on its first column text
   const hasExample = (row: ExcelRow): boolean => {
+    // Section headers never have examples
+    if (isSectionHeader(row)) {
+      return false;
+    }
+    
     const firstColumnText = String(row[data.headers[0]] || "").toLowerCase();
     // Check if this row text matches any available examples
     const exampleKeys = Array.from(examplesAvailable);
@@ -85,28 +101,32 @@ export function DataTable({ data, onExampleClick, examplesAvailable = new Set() 
             </thead>
             <tbody>
               {filteredData.length > 0 ? (
-                filteredData.map((row, rowIdx) => (
-                  <tr
-                    key={rowIdx}
-                    className="border-b last:border-b-0 hover-elevate"
-                    data-testid={`row-data-${rowIdx}`}
-                  >
-                    <td className="px-3 py-3 text-sm w-12">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={`h-8 w-8 ${hasExample(row) ? 'text-chart-2 hover:text-chart-2' : 'opacity-30 cursor-not-allowed'}`}
-                        onClick={() => {
-                          if (hasExample(row) && onExampleClick) {
-                            onExampleClick(String(row[data.headers[0]] || ""));
-                          }
-                        }}
-                        disabled={!hasExample(row)}
-                        data-testid={`button-example-${rowIdx}`}
-                      >
-                        <BookOpen className="h-4 w-4" />
-                      </Button>
-                    </td>
+                filteredData.map((row, rowIdx) => {
+                  const isHeader = isSectionHeader(row);
+                  return (
+                    <tr
+                      key={rowIdx}
+                      className={`border-b last:border-b-0 ${isHeader ? 'bg-muted/50' : 'hover-elevate'}`}
+                      data-testid={`row-data-${rowIdx}`}
+                    >
+                      <td className="px-3 py-3 text-sm w-12">
+                        {!isHeader && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className={`h-8 w-8 ${hasExample(row) ? 'text-chart-2 hover:text-chart-2' : 'opacity-30 cursor-not-allowed'}`}
+                            onClick={() => {
+                              if (hasExample(row) && onExampleClick) {
+                                onExampleClick(String(row[data.headers[0]] || ""));
+                              }
+                            }}
+                            disabled={!hasExample(row)}
+                            data-testid={`button-example-${rowIdx}`}
+                          >
+                            <BookOpen className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </td>
                     {visibleHeaders.map((header, colIdx) => (
                       <td
                         key={colIdx}
@@ -117,7 +137,8 @@ export function DataTable({ data, onExampleClick, examplesAvailable = new Set() 
                       </td>
                     ))}
                   </tr>
-                ))
+                  );
+                })
               ) : (
                 <tr>
                   <td

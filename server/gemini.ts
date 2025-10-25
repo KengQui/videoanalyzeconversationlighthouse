@@ -2,28 +2,17 @@ import { GoogleGenAI } from "@google/genai";
 import type { ExcelData } from "@shared/schema";
 
 const apiKey = process.env.GEMINI_API_KEY || "";
-const projectId = process.env.GOOGLE_PROJECT_ID || "";
-const location = process.env.GOOGLE_LOCATION || "";
 
-// Initialize with Vertex AI configuration if project and location are provided
-const ai = projectId && location 
-  ? new GoogleGenAI({ 
-      vertexai: true,
-      project: projectId,
-      location: location,
-      apiKey: apiKey
-    })
-  : new GoogleGenAI({ apiKey });
+// Use Google AI Studio with API key
+const ai = new GoogleGenAI({ apiKey });
 
 export async function chatWithFramework(
   message: string,
   frameworkContext?: ExcelData
 ): Promise<string> {
   try {
-    console.log("Using Vertex AI configuration:", {
-      hasApiKey: !!apiKey,
-      projectId: projectId || "not set",
-      location: location
+    console.log("Using Google AI Studio with API key:", {
+      hasApiKey: !!apiKey
     });
 
     // ========================================================================

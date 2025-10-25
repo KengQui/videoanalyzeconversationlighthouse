@@ -164,22 +164,13 @@ export async function analyzeVideoWithGemini(
   milestone: number
 ): Promise<CriterionEvaluation[]> {
   const apiKey = process.env.GEMINI_API_KEY || "";
-  const projectId = process.env.GOOGLE_PROJECT_ID || "";
-  const location = process.env.GOOGLE_LOCATION || "";
   
   if (!apiKey) {
     throw new Error("Gemini API key not configured. Please set GEMINI_API_KEY environment variable.");
   }
 
-  // Initialize with Vertex AI configuration if project and location are provided
-  const ai = projectId && location 
-    ? new GoogleGenAI({ 
-        vertexai: true,
-        project: projectId,
-        location: location,
-        apiKey: apiKey
-      })
-    : new GoogleGenAI({ apiKey });
+  // Use Google AI Studio with API key
+  const ai = new GoogleGenAI({ apiKey });
 
   try {
     // Get the conversation design criteria for this milestone

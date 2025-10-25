@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { Upload, CheckCircle2, AlertCircle, Star } from "lucide-react";
+import { Upload, CheckCircle2, AlertCircle, Star, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -138,6 +138,82 @@ export default function ReviewConversation() {
     return "Not Met";
   };
 
+  const generateReport = () => {
+    if (!results) return;
+
+    const avgRating = (results.evaluations.reduce((sum, e) => sum + e.rating, 0) / results.evaluations.length).toFixed(1);
+    const excellentCount = results.evaluations.filter(e => e.rating >= 4).length;
+    const needsImprovementCount = results.evaluations.filter(e => e.rating < 3).length;
+    
+    // Generate formatted report
+    const reportContent = `
+AI CONVERSATION EVALUATION REPORT
+================================================================================
+Generated: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}
+Milestone: ${results.milestone}
+Video File: ${selectedFile?.name || 'N/A'}
+
+EXECUTIVE SUMMARY
+================================================================================
+Total Criteria Evaluated: ${results.evaluations.length}
+Average Rating: ${avgRating}/5.0
+Excellent/Good Ratings (4-5): ${excellentCount} (${Math.round(excellentCount / results.evaluations.length * 100)}%)
+Needs Improvement (1-2): ${needsImprovementCount} (${Math.round(needsImprovementCount / results.evaluations.length * 100)}%)
+
+DETAILED EVALUATION
+================================================================================
+
+${results.evaluations.map((evaluation, index) => `
+${index + 1}. ${evaluation.criterion}
+${'='.repeat(80)}
+Rating: ${evaluation.rating}/5 - ${getRatingLabel(evaluation.rating)}
+${'★'.repeat(evaluation.rating)}${'☆'.repeat(5 - evaluation.rating)}
+
+Feedback:
+${evaluation.feedback}
+
+`).join('\n')}
+
+RECOMMENDATIONS
+================================================================================
+${needsImprovementCount > 0 ? `
+Priority Areas for Improvement:
+${results.evaluations
+  .filter(e => e.rating < 3)
+  .map((e, i) => `${i + 1}. ${e.criterion} (Rating: ${e.rating}/5)`)
+  .join('\n')}
+` : 'All criteria met expectations. Continue maintaining current quality standards.'}
+
+${excellentCount > 0 ? `
+Strengths to Maintain:
+${results.evaluations
+  .filter(e => e.rating >= 4)
+  .slice(0, 5)
+  .map((e, i) => `${i + 1}. ${e.criterion} (Rating: ${e.rating}/5)`)
+  .join('\n')}
+` : ''}
+
+================================================================================
+End of Report
+`;
+
+    // Create and download the file
+    const blob = new Blob([reportContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `conversation-evaluation-report-m${results.milestone}-${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Report Downloaded",
+      description: "Your evaluation report has been saved.",
+    });
+  };
+
   return (
     <div className="container mx-auto p-6 max-w-6xl">
       <div className="mb-8">
@@ -249,11 +325,17 @@ export default function ReviewConversation() {
       {/* Results Display */}
       {results && stage === "completed" && (
         <div className="space-y-4">
-          <div className="flex items-center gap-2 mb-4">
-            <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
-            <h2 className="text-2xl font-bold">
-              Evaluation Results - Milestone {results.milestone}
-            </h2>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
+              <h2 className="text-2xl font-bold">
+                Evaluation Results - Milestone {results.milestone}
+              </h2>
+            </div>
+            <Button onClick={generateReport} variant="outline" data-testid="button-download-report">
+              <Download className="h-4 w-4 mr-2" />
+              Download Report
+            </Button>
           </div>
 
           <div className="grid gap-4">

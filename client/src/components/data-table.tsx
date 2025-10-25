@@ -62,9 +62,6 @@ export function DataTable({ data, onExampleClick, examplesAvailable = new Set() 
             data-testid="input-search"
           />
         </div>
-        <div className="text-sm text-muted-foreground">
-          {filteredData.length} {filteredData.length === 1 ? "row" : "rows"}
-        </div>
       </div>
 
       {/* Table */}

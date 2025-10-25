@@ -4,12 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { cn } from "@/lib/utils";
 import type { ConversationExample } from "@shared/schema";
 
 interface ExamplesPanelProps {
@@ -43,38 +38,52 @@ export function ExamplesPanel({ open, onOpenChange, examples, rowText }: Example
   };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-[600px] sm:max-w-[600px] overflow-y-auto">
-        <SheetHeader>
-          <div className="flex items-center justify-between">
-            <SheetTitle>Conversation Design Examples</SheetTitle>
-            {hasMultiple && (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={goToPrevious}
-                  data-testid="button-previous-example"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="text-sm text-muted-foreground">
-                  {currentIndex + 1} of {examples.length}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={goToNext}
-                  data-testid="button-next-example"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
-          </div>
-        </SheetHeader>
+    <div 
+      className={cn(
+        "h-full bg-background border-l flex flex-col transition-all duration-300 ease-in-out shrink-0",
+        "w-full max-w-[600px] lg:w-[600px] xl:w-[700px]",
+        open ? "translate-x-0" : "translate-x-full"
+      )}
+    >
+      <div className="px-6 py-4 border-b flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Conversation Design Examples</h2>
+        <div className="flex items-center gap-2">
+          {hasMultiple && (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={goToPrevious}
+                data-testid="button-previous-example"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                {currentIndex + 1} of {examples.length}
+              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={goToNext}
+                data-testid="button-next-example"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onOpenChange(false)}
+            data-testid="button-close-panel"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
 
-        <div className="mt-6 space-y-6">
+      <div className="flex-1 overflow-y-auto px-6 py-6">
+        <div className="space-y-6">
           {/* Principle and Score */}
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">{currentExample.principle}</h3>
@@ -197,7 +206,7 @@ export function ExamplesPanel({ open, onOpenChange, examples, rowText }: Example
             </>
           )}
         </div>
-      </SheetContent>
-    </Sheet>
+      </div>
+    </div>
   );
 }

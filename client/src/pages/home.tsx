@@ -5,6 +5,7 @@ import { Header } from "@/components/header";
 import { ExamplesPanel } from "@/components/examples-panel";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 import type { ExcelData, ChatMessage, ConversationExample } from "@shared/schema";
 
 export default function Home() {
@@ -167,38 +168,48 @@ export default function Home() {
         hasFrameworkData={!!frameworkData}
       />
 
-      <div className="container mx-auto px-4 py-6 bg-background">
-        <div className="flex flex-col gap-6 h-[calc(100vh-120px)]">
-          {isLoadingFramework ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center">
-                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent"></div>
-                <p className="text-sm text-muted-foreground mt-4">Loading framework data...</p>
+      <div className="container mx-auto px-4 py-6 bg-background h-[calc(100vh-64px)]">
+        <div className="flex gap-4 h-full relative overflow-hidden">
+          {/* Main content area */}
+          <div 
+            className={cn(
+              "flex-1 transition-all duration-300 ease-in-out overflow-hidden min-w-0",
+              examplesPanelOpen ? "mr-0" : ""
+            )}
+          >
+            {isLoadingFramework ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center">
+                  <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent"></div>
+                  <p className="text-sm text-muted-foreground mt-4">Loading framework data...</p>
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-4 h-full overflow-hidden">
-              <div className="flex-1 overflow-auto">
-                {frameworkData && (
-                  <DataTable 
-                    data={frameworkData} 
-                    onExampleClick={handleExampleClick}
-                    examplesAvailable={examplesAvailable}
-                  />
-                )}
+            ) : (
+              <div className="flex flex-col gap-4 h-full overflow-hidden">
+                <div className="flex-1 overflow-auto">
+                  {frameworkData && (
+                    <DataTable 
+                      data={frameworkData} 
+                      onExampleClick={handleExampleClick}
+                      examplesAvailable={examplesAvailable}
+                    />
+                  )}
+                </div>
               </div>
-            </div>
+            )}
+          </div>
+
+          {/* Examples Panel */}
+          {examplesPanelOpen && (
+            <ExamplesPanel
+              open={examplesPanelOpen}
+              onOpenChange={setExamplesPanelOpen}
+              examples={selectedExamples}
+              rowText={selectedRowText}
+            />
           )}
         </div>
       </div>
-      
-      {/* Examples Panel */}
-      <ExamplesPanel
-        open={examplesPanelOpen}
-        onOpenChange={setExamplesPanelOpen}
-        examples={selectedExamples}
-        rowText={selectedRowText}
-      />
     </div>
   );
 }

@@ -271,13 +271,30 @@ Provide your evaluation as a JSON array only, no other text.`;
     jsonText = jsonText.replace(/\s*```\s*$/, '');
     jsonText = jsonText.trim();
     
-    // Replace ALL types of smart quotes and special characters
-    jsonText = jsonText
-      .replace(/[\u2018\u2019\u201A\u201B]/g, "'")  // All single quote variants
-      .replace(/[\u201C\u201D\u201E\u201F]/g, '"')  // All double quote variants
-      .replace(/[\u2013\u2014]/g, '-')              // Em/en dashes
-      .replace(/\u2026/g, '...')                    // Ellipsis
-      .replace(/[\u2010\u2011\u2012]/g, '-');       // Other dash types
+    // Aggressively clean ALL non-standard characters by converting each character
+    const cleanedChars: string[] = [];
+    for (let i = 0; i < jsonText.length; i++) {
+      const char = jsonText[i];
+      const code = char.charCodeAt(0);
+      
+      // Handle various quote types
+      if (code === 0x201C || code === 0x201D || code === 0x201E || code === 0x201F || code === 0x00AB || code === 0x00BB) {
+        cleanedChars.push('"');  // All double quotes
+      } else if (code === 0x2018 || code === 0x2019 || code === 0x201A || code === 0x201B || code === 0x2039 || code === 0x203A) {
+        cleanedChars.push("'");  // All single quotes
+      } else if (code === 0x2013 || code === 0x2014 || code === 0x2015) {
+        cleanedChars.push('-');  // Em/en dashes
+      } else if (code === 0x2026) {
+        cleanedChars.push('...');  // Ellipsis
+      } else if (code >= 0x2010 && code <= 0x2012) {
+        cleanedChars.push('-');  // Other dashes
+      } else if ((code >= 0x2000 && code <= 0x200B) || code === 0x202F || code === 0x205F || code === 0x3000) {
+        cleanedChars.push(' ');  // Various spaces
+      } else {
+        cleanedChars.push(char);  // Keep as-is
+      }
+    }
+    jsonText = cleanedChars.join('');
 
     try {
       const evaluations: CriterionEvaluation[] = JSON.parse(jsonText);

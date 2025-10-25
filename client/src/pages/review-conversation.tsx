@@ -25,24 +25,31 @@ export default function ReviewConversation() {
 
       setStage("uploading");
       
-      const response = await fetch("/api/video/analyze", {
-        method: "POST",
-        body: formData,
-      });
+      // Start a timer to move through stages (but the actual API call controls completion)
+      const stageTimer = setTimeout(() => setStage("compressing"), 3000);
+      const analyzeTimer = setTimeout(() => setStage("analyzing"), 10000);
+      
+      try {
+        const response = await fetch("/api/video/analyze", {
+          method: "POST",
+          body: formData,
+        });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to analyze video");
+        clearTimeout(stageTimer);
+        clearTimeout(analyzeTimer);
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || "Failed to analyze video");
+        }
+
+        const data = await response.json();
+        return data as VideoAnalysisResult;
+      } catch (error) {
+        clearTimeout(stageTimer);
+        clearTimeout(analyzeTimer);
+        throw error;
       }
-
-      // Simulate stage transitions for better UX
-      setStage("compressing");
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setStage("analyzing");
-      const data = await response.json();
-      
-      return data as VideoAnalysisResult;
     },
     onSuccess: (data) => {
       setStage("completed");

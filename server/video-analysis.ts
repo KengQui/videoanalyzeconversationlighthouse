@@ -296,6 +296,10 @@ Provide your evaluation as a JSON array only, no other text.`;
     }
     jsonText = cleanedChars.join('');
 
+    // Remove trailing commas (common LLM error)
+    // This regex removes commas before closing braces or brackets
+    jsonText = jsonText.replace(/,(\s*[}\]])/g, '$1');
+
     try {
       const evaluations: CriterionEvaluation[] = JSON.parse(jsonText);
       

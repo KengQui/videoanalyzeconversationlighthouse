@@ -8,9 +8,15 @@ import { chatWithFramework } from "./gemini";
 import { compressVideo, analyzeVideoWithGemini, isValidVideo } from "./video-analysis";
 import type { ChatRequest, ChatResponse, ConversationExample, VideoAnalysisResult } from "@shared/schema";
 
+// Ensure upload directory exists
+const UPLOAD_DIR = "/tmp/video-uploads";
+fs.mkdir(UPLOAD_DIR, { recursive: true }).catch(err => {
+  console.error("Failed to create upload directory:", err);
+});
+
 // Configure multer for video uploads
 const upload = multer({
-  dest: "/tmp/video-uploads",
+  dest: UPLOAD_DIR,
   limits: {
     fileSize: 500 * 1024 * 1024, // 500MB max upload size
   },
@@ -175,15 +181,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Analyze video against Conversation Design criteria
-  app.post("/api/video/analyze", upload.single("video"), async (req, res) => {
+  app.post("/api/video/analyze", async (req, res) => {
     let uploadedFilePath: string | undefined;
     let compressedFilePath: string | undefined;
 
+    // Handle file upload with multer
+    await new Promise<void>((resolve, reject) => {
+      upload.single("video")(req, res, (err: any) => {
+        if (err) {
+          console.error("Multer upload error:", err);
+          res.status(400).json({
+            success: false,
+            milestone: 0,
+            evaluations: [],
+            error: err.message || "File upload failed"
+          });
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    }).catch(() => {
+      // Error already sent in multer callback
+      return;
+    });
+
+    // If we already sent a response (due to multer error), don't continue
+    if (res.headersSent) {
+      return;
+    }
+
     try {
+      console.log("Video analysis request received", {
+        hasFile: !!req.file,
+        milestone: req.body.milestone,
+        fileSize: req.file?.size,
+        fileName: req.file?.originalname
+      });
+
       // Validate file upload
       if (!req.file) {
+        console.error("No file in request");
         return res.status(400).json({
           success: false,
+          milestone: 0,
+          evaluations: [],
           error: "No video file uploaded"
         });
       }
@@ -193,8 +235,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate milestone parameter
       const milestone = parseInt(req.body.milestone);
       if (!milestone || milestone < 1 || milestone > 4) {
+        console.error("Invalid milestone:", req.body.milestone);
         return res.status(400).json({
           success: false,
+          milestone: 0,
+          evaluations: [],
           error: "Invalid milestone. Must be between 1 and 4"
         });
       }

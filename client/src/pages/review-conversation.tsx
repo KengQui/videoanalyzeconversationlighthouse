@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Upload, CheckCircle2, AlertCircle, Star, Download, FileText, X } from "lucide-react";
+import { Upload, CheckCircle2, AlertCircle, Star, Download, FileText, X, History, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/header";
 import { Chatbot } from "@/components/chatbot";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import type { VideoAnalysisResult, CriterionEvaluation, ChatMessage, ExcelData } from "@shared/schema";
+import type { VideoAnalysisResult, CriterionEvaluation, ChatMessage, ExcelData, SavedVideoAnalysis } from "@shared/schema";
 
 type AnalysisStage = "idle" | "uploading" | "compressing" | "analyzing" | "completed" | "error";
 
@@ -38,6 +38,15 @@ export default function ReviewConversation() {
   });
 
   const messages = chatHistoryResponse?.data || [];
+
+  // Fetch saved analyses
+  const { data: savedAnalysesResponse } = useQuery<{ success: boolean; data: SavedVideoAnalysis[] }>({
+    queryKey: ["/api/video/analyses"],
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
+  const savedAnalyses = savedAnalysesResponse?.data || [];
 
   const analyzeMutation = useMutation({
     mutationFn: async ({ file, milestone }: { file: File; milestone: number }) => {
@@ -76,6 +85,7 @@ export default function ReviewConversation() {
     onSuccess: (data) => {
       setStage("completed");
       setResults(data);
+      queryClient.invalidateQueries({ queryKey: ["/api/video/analyses"] });
       toast({
         title: "Analysis Complete",
         description: `Evaluated ${data.evaluations.length} Conversation Design criteria.`,
@@ -255,6 +265,41 @@ End of Report
   const toggleInlineReport = () => {
     setShowInlineReport(!showInlineReport);
   };
+
+  const loadSavedAnalysis = (analysis: SavedVideoAnalysis) => {
+    setResults({
+      success: true,
+      milestone: analysis.milestone,
+      evaluations: analysis.evaluations
+    });
+    setStage("completed");
+    setMilestone(analysis.milestone.toString());
+    setShowInlineReport(false);
+    toast({
+      title: "Analysis Loaded",
+      description: `Loaded analysis for ${analysis.videoFileName}`,
+    });
+  };
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/video/analyses/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/video/analyses"] });
+      toast({
+        title: "Analysis Deleted",
+        description: "The saved analysis has been removed.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete analysis",
+        variant: "destructive",
+      });
+    }
+  });
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
@@ -536,6 +581,61 @@ End of Report
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {/* Saved Analyses History */}
+      {savedAnalyses.length > 0 && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <History className="h-5 w-5" />
+              Previous Analyses
+            </CardTitle>
+            <CardDescription>
+              Load a previously saved video analysis
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {savedAnalyses.map((analysis) => (
+                <Card key={analysis.id} className="hover-elevate">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex-1">
+                        <p className="font-medium text-sm">{analysis.videoFileName}</p>
+                        <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                          <span>Milestone {analysis.milestone}</span>
+                          <span>•</span>
+                          <span>Avg Rating: {analysis.averageRating}/5.0</span>
+                          <span>•</span>
+                          <span>{new Date(analysis.timestamp).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => loadSavedAnalysis(analysis)}
+                          data-testid={`button-load-analysis-${analysis.id}`}
+                        >
+                          Load
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteMutation.mutate(analysis.id)}
+                          data-testid={`button-delete-analysis-${analysis.id}`}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
           </div>
         </div>

@@ -96,3 +96,13 @@ export interface VideoAnalysisResult {
   evaluations: CriterionEvaluation[];
   error?: string;
 }
+
+// Saved Video Analysis schema
+export interface SavedVideoAnalysis {
+  id: string;
+  videoFileName: string;
+  milestone: number;
+  evaluations: CriterionEvaluation[];
+  timestamp: string;
+  averageRating: number;
+}

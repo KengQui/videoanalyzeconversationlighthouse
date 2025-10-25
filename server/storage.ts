@@ -1,4 +1,4 @@
-import type { ChatMessage, InsertChatMessage, ExcelData, ConversationExample, ExamplesData } from "@shared/schema";
+import type { ChatMessage, InsertChatMessage, ExcelData, ConversationExample, ExamplesData, SavedVideoAnalysis, CriterionEvaluation } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { INITIAL_FRAMEWORK_DATA } from "./framework-data";
 import { INITIAL_EXAMPLES_DATA } from "./examples-data";
@@ -20,12 +20,19 @@ export interface IStorage {
   getExamplesByPrinciple(principle: string): Promise<ConversationExample[]>;
   updateExample(id: string, example: Partial<ConversationExample>): Promise<ConversationExample | null>;
   addExample(example: Omit<ConversationExample, 'id'>): Promise<ConversationExample>;
+
+  // Video analyses
+  saveVideoAnalysis(videoFileName: string, milestone: number, evaluations: CriterionEvaluation[]): Promise<SavedVideoAnalysis>;
+  getVideoAnalyses(): Promise<SavedVideoAnalysis[]>;
+  getVideoAnalysisById(id: string): Promise<SavedVideoAnalysis | null>;
+  deleteVideoAnalysis(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
   private frameworkData: ExcelData | null = INITIAL_FRAMEWORK_DATA;
   private chatMessages: Map<string, ChatMessage> = new Map();
   private examplesData: Map<string, ConversationExample> = new Map();
+  private videoAnalyses: Map<string, SavedVideoAnalysis> = new Map();
 
   async setFrameworkData(data: ExcelData): Promise<void> {
     this.frameworkData = data;
@@ -81,6 +88,36 @@ export class MemStorage implements IStorage {
     const newExample = { ...example, id };
     this.examplesData.set(id, newExample);
     return newExample;
+  }
+
+  async saveVideoAnalysis(videoFileName: string, milestone: number, evaluations: CriterionEvaluation[]): Promise<SavedVideoAnalysis> {
+    const id = randomUUID();
+    const averageRating = evaluations.reduce((sum, e) => sum + e.rating, 0) / evaluations.length;
+    const analysis: SavedVideoAnalysis = {
+      id,
+      videoFileName,
+      milestone,
+      evaluations,
+      timestamp: new Date().toISOString(),
+      averageRating: parseFloat(averageRating.toFixed(1))
+    };
+    this.videoAnalyses.set(id, analysis);
+    console.log(`💾 Saved video analysis: ${videoFileName} (Milestone ${milestone}) - ${evaluations.length} evaluations`);
+    return analysis;
+  }
+
+  async getVideoAnalyses(): Promise<SavedVideoAnalysis[]> {
+    return Array.from(this.videoAnalyses.values()).sort((a, b) => 
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+  }
+
+  async getVideoAnalysisById(id: string): Promise<SavedVideoAnalysis | null> {
+    return this.videoAnalyses.get(id) || null;
+  }
+
+  async deleteVideoAnalysis(id: string): Promise<boolean> {
+    return this.videoAnalyses.delete(id);
   }
 
   constructor() {

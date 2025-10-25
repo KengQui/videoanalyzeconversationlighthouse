@@ -262,6 +262,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Analyze with Gemini
       const evaluations = await analyzeVideoWithGemini(compressedFilePath, milestone);
 
+      // Save the analysis to storage
+      const savedAnalysis = await storage.saveVideoAnalysis(
+        req.file.originalname,
+        milestone,
+        evaluations
+      );
+
       const result: VideoAnalysisResult = {
         success: true,
         milestone,
@@ -290,6 +297,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (cleanupError) {
         console.error("Error cleaning up temporary files:", cleanupError);
       }
+    }
+  });
+
+  // Get all saved video analyses
+  app.get("/api/video/analyses", async (_req, res) => {
+    try {
+      const analyses = await storage.getVideoAnalyses();
+      res.json({ success: true, data: analyses });
+    } catch (error: any) {
+      console.error("Error fetching video analyses:", error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Get a specific video analysis by ID
+  app.get("/api/video/analyses/:id", async (req, res) => {
+    try {
+      const analysis = await storage.getVideoAnalysisById(req.params.id);
+      if (!analysis) {
+        return res.status(404).json({ success: false, error: "Analysis not found" });
+      }
+      res.json({ success: true, data: analysis });
+    } catch (error: any) {
+      console.error("Error fetching video analysis:", error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Delete a video analysis
+  app.delete("/api/video/analyses/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteVideoAnalysis(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ success: false, error: "Analysis not found" });
+      }
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error deleting video analysis:", error);
+      res.status(500).json({ success: false, error: error.message });
     }
   });
 

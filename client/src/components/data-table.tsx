@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { ArrowUpDown, ArrowUp, ArrowDown, Search, BookOpen } from "lucide-react";
+import { Search, BookOpen } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,12 +11,8 @@ interface DataTableProps {
   examplesAvailable?: Set<string>;
 }
 
-type SortDirection = "asc" | "desc" | null;
-
 export function DataTable({ data, onExampleClick, examplesAvailable = new Set() }: DataTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortColumn, setSortColumn] = useState<string | null>(null);
-  const [sortDirection, setSortDirection] = useState<SortDirection>(null);
 
   // Filter out the last two columns (__EMPTY_1 and __EMPTY_2)
   const visibleHeaders = useMemo(() => {
@@ -36,23 +32,7 @@ export function DataTable({ data, onExampleClick, examplesAvailable = new Set() 
     return false;
   };
 
-  const handleSort = (column: string) => {
-    if (sortColumn === column) {
-      if (sortDirection === "asc") {
-        setSortDirection("desc");
-      } else if (sortDirection === "desc") {
-        setSortColumn(null);
-        setSortDirection(null);
-      } else {
-        setSortDirection("asc");
-      }
-    } else {
-      setSortColumn(column);
-      setSortDirection("asc");
-    }
-  };
-
-  const filteredAndSortedData = useMemo(() => {
+  const filteredData = useMemo(() => {
     let filtered = data.rows;
 
     // Apply search filter
@@ -64,25 +44,8 @@ export function DataTable({ data, onExampleClick, examplesAvailable = new Set() 
       );
     }
 
-    // Apply sorting
-    if (sortColumn && sortDirection) {
-      filtered = [...filtered].sort((a, b) => {
-        const aVal = a[sortColumn];
-        const bVal = b[sortColumn];
-        
-        if (aVal === null || aVal === undefined) return 1;
-        if (bVal === null || bVal === undefined) return -1;
-        
-        const comparison = String(aVal).localeCompare(String(bVal), undefined, {
-          numeric: true,
-        });
-        
-        return sortDirection === "asc" ? comparison : -comparison;
-      });
-    }
-
     return filtered;
-  }, [data.rows, searchTerm, sortColumn, sortDirection]);
+  }, [data.rows, searchTerm]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -100,7 +63,7 @@ export function DataTable({ data, onExampleClick, examplesAvailable = new Set() 
           />
         </div>
         <div className="text-sm text-muted-foreground">
-          {filteredAndSortedData.length} {filteredAndSortedData.length === 1 ? "row" : "rows"}
+          {filteredData.length} {filteredData.length === 1 ? "row" : "rows"}
         </div>
       </div>
 
@@ -118,31 +81,14 @@ export function DataTable({ data, onExampleClick, examplesAvailable = new Set() 
                     key={idx}
                     className="text-left px-4 py-3 font-semibold text-sm border-b"
                   >
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-auto p-0 hover:bg-transparent gap-1 font-semibold"
-                      onClick={() => handleSort(header)}
-                      data-testid={`button-sort-${header}`}
-                    >
-                      {header}
-                      {sortColumn === header ? (
-                        sortDirection === "asc" ? (
-                          <ArrowUp className="h-3 w-3" />
-                        ) : (
-                          <ArrowDown className="h-3 w-3" />
-                        )
-                      ) : (
-                        <ArrowUpDown className="h-3 w-3 opacity-50" />
-                      )}
-                    </Button>
+                    {header === "__EMPTY" ? "Criteria" : header}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {filteredAndSortedData.length > 0 ? (
-                filteredAndSortedData.map((row, rowIdx) => (
+              {filteredData.length > 0 ? (
+                filteredData.map((row, rowIdx) => (
                   <tr
                     key={rowIdx}
                     className="border-b last:border-b-0 hover-elevate"

@@ -189,6 +189,8 @@ export async function analyzeVideoWithGemini(
     // Create the evaluation prompt
     const prompt = `You are an expert in conversational AI design. Analyze this video of an AI conversation interface against the following Conversation Design criteria from Milestone ${milestone} of our evaluation framework.
 
+Watch the video carefully and provide specific examples with timestamps for each criterion.
+
 For each criterion listed below, provide:
 1. A rating from 1-5 where:
    - 1 = Criterion not met at all
@@ -197,11 +199,13 @@ For each criterion listed below, provide:
    - 4 = Criterion well met, minor improvements possible
    - 5 = Criterion excellently met
 
-2. Detailed feedback explaining your rating, including:
-   - Specific observations from the video
-   - What was done well (if anything)
-   - What could be improved
-   - Examples or timestamps from the video when relevant
+2. Detailed feedback explaining your rating. **MUST include specific examples from the video with timestamps**:
+   - Cite specific moments from the video (e.g., "At 0:45, the AI asks...")
+   - Quote exact phrases or describe specific interactions you observed
+   - Provide timestamps in MM:SS format for key examples
+   - Note what was done well with concrete examples
+   - Identify specific moments that could be improved
+   - Reference at least 2-3 specific examples from the video for each criterion
 
 **Conversation Design Criteria to Evaluate:**
 ${criteria.map((c, i) => `${i + 1}. ${c}`).join('\n')}
@@ -209,14 +213,14 @@ ${criteria.map((c, i) => `${i + 1}. ${c}`).join('\n')}
 **IMPORTANT:** Respond with a valid JSON array. Each element should have exactly these fields:
 - criterion: The exact criterion name from the list above
 - rating: A number from 1-5
-- feedback: Detailed text feedback
+- feedback: Detailed text feedback with specific video examples and timestamps
 
 Example format:
 [
   {
     "criterion": "Use simple, direct language",
     "rating": 4,
-    "feedback": "The AI consistently uses clear, straightforward language throughout the conversation. At 0:32, it asks 'How many employees do you have?' rather than using jargon. One minor improvement: at 1:15, the phrase 'configure pay periods' could be simplified to 'set up when you pay employees'."
+    "feedback": "The AI demonstrates strong use of clear language throughout most of the conversation. At 0:32, it asks 'How many employees do you have?' which is direct and easy to understand. At 1:45, it says 'Let me help you set up your payroll' instead of using technical jargon. However, at 2:15, the phrase 'configure pay periods' could be simplified to 'set up when you pay employees' to be more accessible to non-technical users. At 3:20, the explanation of tax withholding was clear and well-paced."
   }
 ]
 

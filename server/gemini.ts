@@ -1,13 +1,19 @@
 import { GoogleGenAI } from "@google/genai";
 import type { ExcelData } from "@shared/schema";
 
-const apiKey = process.env.VERTEX_AI_API_KEY || process.env.GEMINI_API_KEY || "";
+const apiKey = process.env.GEMINI_API_KEY || "";
 const projectId = process.env.GOOGLE_PROJECT_ID || "";
-const location = process.env.GOOGLE_LOCATION || "us-central1";
+const location = process.env.GOOGLE_LOCATION || "";
 
-const ai = new GoogleGenAI({ 
-  apiKey: apiKey,
-});
+// Initialize with Vertex AI configuration if project and location are provided
+const ai = projectId && location 
+  ? new GoogleGenAI({ 
+      vertexai: true,
+      project: projectId,
+      location: location,
+      apiKey: apiKey
+    })
+  : new GoogleGenAI({ apiKey });
 
 export async function chatWithFramework(
   message: string,

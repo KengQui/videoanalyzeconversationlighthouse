@@ -224,7 +224,7 @@ Provide your evaluation as a JSON array only, no other text.`;
 
     // Send to Gemini with video
     const response = await ai.models.generateContent({
-      model: "gemini-1.5-pro",
+      model: "gemini-2.0-flash-exp",
       contents: [{
         role: "user",
         parts: [

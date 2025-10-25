@@ -40,9 +40,8 @@ export function ExamplesPanel({ open, onOpenChange, examples, rowText }: Example
   return (
     <div 
       className={cn(
-        "h-full bg-background border-l flex flex-col transition-all duration-300 ease-in-out shrink-0",
-        "w-full max-w-[600px] lg:w-[600px] xl:w-[700px]",
-        open ? "translate-x-0" : "translate-x-full"
+        "h-full bg-background border-l flex flex-col shrink-0",
+        "w-[600px]"
       )}
     >
       <div className="px-6 py-4 border-b flex items-center justify-between">

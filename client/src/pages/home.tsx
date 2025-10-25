@@ -169,12 +169,12 @@ export default function Home() {
       />
 
       <div className="container mx-auto px-4 py-6 bg-background h-[calc(100vh-64px)]">
-        <div className="flex gap-4 h-full relative overflow-hidden">
+        <div className="flex gap-4 h-full overflow-hidden">
           {/* Main content area */}
           <div 
             className={cn(
-              "flex-1 transition-all duration-300 ease-in-out overflow-hidden min-w-0",
-              examplesPanelOpen ? "mr-0" : ""
+              "transition-all duration-300 ease-in-out overflow-hidden",
+              examplesPanelOpen ? "w-[calc(100%-616px)]" : "w-full"
             )}
           >
             {isLoadingFramework ? (
@@ -200,14 +200,21 @@ export default function Home() {
           </div>
 
           {/* Examples Panel */}
-          {examplesPanelOpen && (
-            <ExamplesPanel
-              open={examplesPanelOpen}
-              onOpenChange={setExamplesPanelOpen}
-              examples={selectedExamples}
-              rowText={selectedRowText}
-            />
-          )}
+          <div
+            className={cn(
+              "transition-all duration-300 ease-in-out overflow-hidden",
+              examplesPanelOpen ? "w-[600px]" : "w-0"
+            )}
+          >
+            {examplesPanelOpen && (
+              <ExamplesPanel
+                open={examplesPanelOpen}
+                onOpenChange={setExamplesPanelOpen}
+                examples={selectedExamples}
+                rowText={selectedRowText}
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>

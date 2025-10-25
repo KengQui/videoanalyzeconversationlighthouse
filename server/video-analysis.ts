@@ -263,12 +263,16 @@ Provide your evaluation as a JSON array only, no other text.`;
 
     // Parse the JSON response
     // Remove markdown code blocks if present
-    let jsonText = responseText;
-    if (jsonText.startsWith("```json")) {
-      jsonText = jsonText.replace(/```json\n?/, '').replace(/\n?```$/, '');
-    } else if (jsonText.startsWith("```")) {
-      jsonText = jsonText.replace(/```\n?/, '').replace(/\n?```$/, '');
-    }
+    let jsonText = responseText.trim();
+    // Remove ```json or ``` at the start and end
+    jsonText = jsonText.replace(/^```json\s*/i, '').replace(/^```\s*/, '');
+    jsonText = jsonText.replace(/\s*```\s*$/, '');
+    jsonText = jsonText.trim();
+    
+    // Replace smart quotes with regular quotes to fix JSON parsing
+    jsonText = jsonText.replace(/[\u2018\u2019]/g, "'"); // Replace smart single quotes
+    jsonText = jsonText.replace(/[\u201C\u201D]/g, '"'); // Replace smart double quotes
+    jsonText = jsonText.replace(/[\u2013\u2014]/g, '-'); // Replace em/en dashes
 
     try {
       const evaluations: CriterionEvaluation[] = JSON.parse(jsonText);

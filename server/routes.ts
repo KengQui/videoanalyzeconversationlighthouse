@@ -437,9 +437,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If file was uploaded, read its content
       if (req.file) {
         const fs = await import('fs/promises');
-        content = await fs.readFile(req.file.path, 'utf-8');
-        // Clean up uploaded file
-        await fs.unlink(req.file.path);
+        try {
+          // For text-based files, read as UTF-8
+          if (req.file.mimetype.startsWith('text/') || 
+              req.file.originalname.endsWith('.txt') ||
+              req.file.originalname.endsWith('.md') ||
+              req.file.originalname.endsWith('.json')) {
+            content = await fs.readFile(req.file.path, 'utf-8');
+          } else {
+            // For binary files (Word, PDF, etc.), store a message indicating manual entry needed
+            content = `[Binary file uploaded: ${req.file.originalname}]\n\nPlease copy and paste the text content of your agent specification in the "Spec Content" field above, or upload a plain text file (.txt, .md, .json) instead.`;
+          }
+        } finally {
+          // Clean up uploaded file
+          await fs.unlink(req.file.path).catch(() => {});
+        }
       }
 
       if (!content) {
@@ -472,9 +484,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If file was uploaded, read its content
       if (req.file) {
         const fs = await import('fs/promises');
-        updates.specContent = await fs.readFile(req.file.path, 'utf-8');
-        // Clean up uploaded file
-        await fs.unlink(req.file.path);
+        try {
+          // For text-based files, read as UTF-8
+          if (req.file.mimetype.startsWith('text/') || 
+              req.file.originalname.endsWith('.txt') ||
+              req.file.originalname.endsWith('.md') ||
+              req.file.originalname.endsWith('.json')) {
+            updates.specContent = await fs.readFile(req.file.path, 'utf-8');
+          } else {
+            // For binary files (Word, PDF, etc.), store a message indicating manual entry needed
+            updates.specContent = `[Binary file uploaded: ${req.file.originalname}]\n\nPlease copy and paste the text content of your agent specification in the "Spec Content" field above, or upload a plain text file (.txt, .md, .json) instead.`;
+          }
+        } finally {
+          // Clean up uploaded file
+          await fs.unlink(req.file.path).catch(() => {});
+        }
       } else if (specContent) {
         updates.specContent = specContent;
       }

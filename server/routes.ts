@@ -51,35 +51,12 @@ const specUpload = multer({
     fileSize: 10 * 1024 * 1024, // 10MB max for spec files
   },
   fileFilter: (req, file, cb) => {
-    console.log("Agent spec upload - file info:", {
+    console.log("Agent spec upload - accepting file:", {
       originalname: file.originalname,
-      mimetype: file.mimetype,
-      size: file.size
+      mimetype: file.mimetype
     });
-    
-    // Accept text files, JSON, spreadsheet, and Word document formats
-    const allowedMimeTypes = [
-      'text/plain',
-      'application/json',
-      'text/csv',
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/msword', // .doc files
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx files
-      'application/octet-stream' // Some browsers use this for unknown types
-    ];
-    
-    const allowedExtensions = ['.txt', '.json', '.csv', '.xls', '.xlsx', '.md', '.doc', '.docx'];
-    const hasAllowedExtension = allowedExtensions.some(ext => 
-      file.originalname.toLowerCase().endsWith(ext)
-    );
-    
-    if (allowedMimeTypes.includes(file.mimetype) || hasAllowedExtension) {
-      cb(null, true);
-    } else {
-      console.error("Rejected file:", file.originalname, "with mimetype:", file.mimetype);
-      cb(new Error(`File type not allowed. Received: ${file.mimetype}. Please upload text, JSON, CSV, or Excel files.`));
-    }
+    // Accept all document files - we'll extract text from them
+    cb(null, true);
   }
 });
 

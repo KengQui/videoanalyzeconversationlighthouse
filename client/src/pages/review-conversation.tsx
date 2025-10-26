@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/header";
 import { Chatbot } from "@/components/chatbot";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import type { VideoAnalysisResult, CriterionEvaluation, ChatMessage, ExcelData, SavedVideoAnalysis } from "@shared/schema";
+import type { VideoAnalysisResult, CriterionEvaluation, ChatMessage, ExcelData, SavedVideoAnalysis, AgentSpec } from "@shared/schema";
 
 type AnalysisStage = "idle" | "uploading" | "compressing" | "analyzing" | "completed" | "error";
 
@@ -18,6 +18,7 @@ export default function ReviewConversation() {
   const { toast } = useToast();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [milestone, setMilestone] = useState<string>("1");
+  const [selectedAgentSpecId, setSelectedAgentSpecId] = useState<string>("");
   const [stage, setStage] = useState<AnalysisStage>("idle");
   const [results, setResults] = useState<VideoAnalysisResult | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
@@ -48,11 +49,23 @@ export default function ReviewConversation() {
 
   const savedAnalyses = savedAnalysesResponse?.data || [];
 
+  // Fetch agent specs
+  const { data: agentSpecsResponse } = useQuery<{ success: boolean; data: AgentSpec[] }>({
+    queryKey: ["/api/agent-specs"],
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
+  const agentSpecs = agentSpecsResponse?.data || [];
+
   const analyzeMutation = useMutation({
-    mutationFn: async ({ file, milestone }: { file: File; milestone: number }) => {
+    mutationFn: async ({ file, milestone, agentSpecId }: { file: File; milestone: number; agentSpecId?: string }) => {
       const formData = new FormData();
       formData.append("video", file);
       formData.append("milestone", milestone.toString());
+      if (agentSpecId) {
+        formData.append("agentSpecId", agentSpecId);
+      }
 
       setStage("uploading");
       
@@ -132,6 +145,7 @@ export default function ReviewConversation() {
     analyzeMutation.mutate({
       file: selectedFile,
       milestone: parseInt(milestone),
+      agentSpecId: selectedAgentSpecId || undefined,
     });
   };
 
@@ -329,7 +343,7 @@ End of Report
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-3">
             {/* File Input */}
             <div className="space-y-2">
               <label htmlFor="video-upload" className="text-sm font-medium">
@@ -375,6 +389,26 @@ End of Report
                   <SelectItem value="2" data-testid="option-milestone-2">Milestone 2 (Improved)</SelectItem>
                   <SelectItem value="3" data-testid="option-milestone-3">Milestone 3 (Delightful)</SelectItem>
                   <SelectItem value="4" data-testid="option-milestone-4">Milestone 4 (Exceptional)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Agent Spec Selector */}
+            <div className="space-y-2">
+              <label htmlFor="agent-spec-select" className="text-sm font-medium">
+                Agent Spec (Optional)
+              </label>
+              <Select value={selectedAgentSpecId} onValueChange={setSelectedAgentSpecId}>
+                <SelectTrigger id="agent-spec-select" data-testid="select-agent-spec">
+                  <SelectValue placeholder="None (General only)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="" data-testid="option-agent-spec-none">None (General only)</SelectItem>
+                  {agentSpecs.map((spec) => (
+                    <SelectItem key={spec.id} value={spec.id} data-testid={`option-agent-spec-${spec.id}`}>
+                      {spec.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -428,12 +462,13 @@ End of Report
 
       {/* Results Display */}
       {results && stage === "completed" && (
-        <div className="space-y-4">
+        <div className="space-y-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
               <h2 className="text-2xl font-bold">
                 Evaluation Results - Milestone {results.milestone}
+                {results.agentSpecName && ` + ${results.agentSpecName}`}
               </h2>
             </div>
             <div className="flex gap-2">
@@ -555,7 +590,7 @@ End of Report
           {/* Summary */}
           <Card className="mt-6">
             <CardHeader>
-              <CardTitle>Summary</CardTitle>
+              <CardTitle>Conversation Design Summary</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 md:grid-cols-3">
@@ -580,6 +615,96 @@ End of Report
               </div>
             </CardContent>
           </Card>
+
+          {/* Domain-Specific Evaluation Results */}
+          {results.domainEvaluation && (
+            <div className="mt-6">
+              <h3 className="text-xl font-bold mb-4">Domain Compliance: {results.agentSpecName}</h3>
+              
+              {/* Domain Summary Card */}
+              <Card className="mb-4">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>Spec Compliance Summary</span>
+                    <div className={`text-2xl font-bold ${getRatingColor(results.domainEvaluation.overallCompliance)}`}>
+                      {results.domainEvaluation.overallCompliance}/5
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-green-600 dark:text-green-400" data-testid="text-domain-pass">
+                        {results.domainEvaluation.findings.filter(f => f.status === "pass").length}
+                      </p>
+                      <p className="text-sm text-muted-foreground">Passed</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400" data-testid="text-domain-partial">
+                        {results.domainEvaluation.findings.filter(f => f.status === "partial").length}
+                      </p>
+                      <p className="text-sm text-muted-foreground">Partial</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-red-600 dark:text-red-400" data-testid="text-domain-fail">
+                        {results.domainEvaluation.findings.filter(f => f.status === "fail").length}
+                      </p>
+                      <p className="text-sm text-muted-foreground">Failed</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Domain Findings */}
+              <div className="grid gap-4">
+                {results.domainEvaluation.findings.map((finding, index) => {
+                  const statusColor = finding.status === "pass" 
+                    ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200" 
+                    : finding.status === "partial"
+                    ? "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200"
+                    : "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200";
+                  
+                  const severityColor = finding.severity === "critical"
+                    ? "text-red-600 dark:text-red-400"
+                    : finding.severity === "major"
+                    ? "text-orange-600 dark:text-orange-400"
+                    : "text-blue-600 dark:text-blue-400";
+
+                  return (
+                    <Card key={index} data-testid={`card-domain-finding-${index}`}>
+                      <CardHeader>
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <CardTitle className="text-lg mb-2">
+                              {finding.category}
+                            </CardTitle>
+                            <div className="flex items-center gap-2">
+                              <span className={`px-2 py-1 rounded-md text-xs font-semibold uppercase ${statusColor}`}>
+                                {finding.status}
+                              </span>
+                              {finding.severity && (
+                                <span className={`text-xs font-medium uppercase ${severityColor}`}>
+                                  {finding.severity}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          <h4 className="font-medium text-sm text-muted-foreground">Details:</h4>
+                          <p className="text-sm leading-relaxed" data-testid={`domain-details-${index}`}>
+                            {finding.details}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

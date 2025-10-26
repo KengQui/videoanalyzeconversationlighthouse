@@ -17,6 +17,17 @@ export const videoAnalyses = pgTable("video_analyses", {
   evaluations: json("evaluations").notNull(), // Array of CriterionEvaluation
   timestamp: timestamp("timestamp").notNull().defaultNow(),
   averageRating: real("average_rating").notNull(),
+  agentSpecId: varchar("agent_spec_id"), // Optional reference to agent spec used
+  agentSpecName: text("agent_spec_name"), // Name of the agent spec (denormalized for convenience)
+  domainEvaluation: json("domain_evaluation"), // Optional domain-specific evaluation results
+});
+
+// Agent specifications schema - stores agent spec documents for domain-specific evaluation
+export const agentSpecs = pgTable("agent_specs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull().unique(),
+  specContent: text("spec_content").notNull(), // Full text content of the spec document
+  uploadDate: timestamp("upload_date").notNull().defaultNow(),
 });
 
 export const insertFrameworkContentSchema = createInsertSchema(frameworkContent).pick({
@@ -33,6 +44,14 @@ export const insertVideoAnalysisSchema = createInsertSchema(videoAnalyses).omit(
 
 export type InsertVideoAnalysis = z.infer<typeof insertVideoAnalysisSchema>;
 export type VideoAnalysis = typeof videoAnalyses.$inferSelect;
+
+export const insertAgentSpecSchema = createInsertSchema(agentSpecs).omit({
+  id: true,
+  uploadDate: true,
+});
+
+export type InsertAgentSpec = z.infer<typeof insertAgentSpecSchema>;
+export type AgentSpec = typeof agentSpecs.$inferSelect;
 
 // Chat message schema
 export const chatMessages = pgTable("chat_messages", {
@@ -112,6 +131,8 @@ export interface VideoAnalysisResult {
   success: boolean;
   milestone: number;
   evaluations: CriterionEvaluation[];
+  agentSpecName?: string; // Name of agent spec if domain evaluation was performed
+  domainEvaluation?: DomainEvaluation; // Domain-specific evaluation results
   error?: string;
 }
 
@@ -123,4 +144,21 @@ export interface SavedVideoAnalysis {
   evaluations: CriterionEvaluation[];
   timestamp: string;
   averageRating: number;
+  agentSpecId?: string; // Optional link to agent spec used for analysis
+  agentSpecName?: string; // Name of the agent spec
+  domainEvaluation?: DomainEvaluation; // Domain-specific evaluation results
+}
+
+// Domain-specific evaluation results
+export interface DomainEvaluation {
+  specName: string;
+  overallCompliance: number; // 1-5 rating for overall spec compliance
+  findings: DomainFinding[];
+}
+
+export interface DomainFinding {
+  category: string; // e.g., "Question Flow", "Conditional Logic", "Auto-Detection"
+  status: "pass" | "fail" | "partial"; // Compliance status
+  details: string; // Detailed explanation with examples
+  severity?: "critical" | "major" | "minor"; // How important is this issue
 }

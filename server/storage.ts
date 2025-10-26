@@ -1,5 +1,5 @@
-import type { ChatMessage, InsertChatMessage, ExcelData, ConversationExample, ExamplesData, SavedVideoAnalysis, CriterionEvaluation } from "@shared/schema";
-import { videoAnalyses } from "@shared/schema";
+import type { ChatMessage, InsertChatMessage, ExcelData, ConversationExample, ExamplesData, SavedVideoAnalysis, CriterionEvaluation, AgentSpec, InsertAgentSpec, DomainEvaluation } from "@shared/schema";
+import { videoAnalyses, agentSpecs } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { INITIAL_FRAMEWORK_DATA } from "./framework-data";
 import { INITIAL_EXAMPLES_DATA } from "./examples-data";
@@ -25,10 +25,25 @@ export interface IStorage {
   addExample(example: Omit<ConversationExample, 'id'>): Promise<ConversationExample>;
 
   // Video analyses
-  saveVideoAnalysis(videoFileName: string, milestone: number, evaluations: CriterionEvaluation[]): Promise<SavedVideoAnalysis>;
+  saveVideoAnalysis(
+    videoFileName: string,
+    milestone: number,
+    evaluations: CriterionEvaluation[],
+    agentSpecId?: string,
+    agentSpecName?: string,
+    domainEvaluation?: DomainEvaluation
+  ): Promise<SavedVideoAnalysis>;
   getVideoAnalyses(): Promise<SavedVideoAnalysis[]>;
   getVideoAnalysisById(id: string): Promise<SavedVideoAnalysis | null>;
   deleteVideoAnalysis(id: string): Promise<boolean>;
+
+  // Agent specs
+  createAgentSpec(spec: InsertAgentSpec): Promise<AgentSpec>;
+  getAllAgentSpecs(): Promise<AgentSpec[]>;
+  getAgentSpecById(id: string): Promise<AgentSpec | null>;
+  getAgentSpecByName(name: string): Promise<AgentSpec | null>;
+  updateAgentSpec(id: string, spec: Partial<InsertAgentSpec>): Promise<AgentSpec | null>;
+  deleteAgentSpec(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -92,17 +107,28 @@ export class MemStorage implements IStorage {
     return newExample;
   }
 
-  async saveVideoAnalysis(videoFileName: string, milestone: number, evaluations: CriterionEvaluation[]): Promise<SavedVideoAnalysis> {
+  async saveVideoAnalysis(
+    videoFileName: string,
+    milestone: number,
+    evaluations: CriterionEvaluation[],
+    agentSpecId?: string,
+    agentSpecName?: string,
+    domainEvaluation?: DomainEvaluation
+  ): Promise<SavedVideoAnalysis> {
     const averageRating = evaluations.reduce((sum, e) => sum + e.rating, 0) / evaluations.length;
     
     const [saved] = await db.insert(videoAnalyses).values({
       videoFileName,
       milestone,
       evaluations: evaluations as any, // JSON column
-      averageRating: parseFloat(averageRating.toFixed(1))
+      averageRating: parseFloat(averageRating.toFixed(1)),
+      agentSpecId: agentSpecId || null,
+      agentSpecName: agentSpecName || null,
+      domainEvaluation: domainEvaluation as any || null
     }).returning();
     
-    console.log(`💾 Saved video analysis to database: ${videoFileName} (Milestone ${milestone}) - ${evaluations.length} evaluations`);
+    const domainInfo = agentSpecName ? ` with domain spec: ${agentSpecName}` : "";
+    console.log(`💾 Saved video analysis to database: ${videoFileName} (Milestone ${milestone})${domainInfo} - ${evaluations.length} evaluations`);
     
     return {
       id: saved.id,
@@ -110,7 +136,10 @@ export class MemStorage implements IStorage {
       milestone: saved.milestone,
       evaluations: saved.evaluations as CriterionEvaluation[],
       timestamp: saved.timestamp.toISOString(),
-      averageRating: saved.averageRating
+      averageRating: saved.averageRating,
+      agentSpecId: saved.agentSpecId || undefined,
+      agentSpecName: saved.agentSpecName || undefined,
+      domainEvaluation: (saved.domainEvaluation as DomainEvaluation) || undefined
     };
   }
 
@@ -123,7 +152,10 @@ export class MemStorage implements IStorage {
       milestone: a.milestone,
       evaluations: a.evaluations as CriterionEvaluation[],
       timestamp: a.timestamp.toISOString(),
-      averageRating: a.averageRating
+      averageRating: a.averageRating,
+      agentSpecId: a.agentSpecId || undefined,
+      agentSpecName: a.agentSpecName || undefined,
+      domainEvaluation: (a.domainEvaluation as DomainEvaluation) || undefined
     }));
   }
 
@@ -138,12 +170,53 @@ export class MemStorage implements IStorage {
       milestone: analysis.milestone,
       evaluations: analysis.evaluations as CriterionEvaluation[],
       timestamp: analysis.timestamp.toISOString(),
-      averageRating: analysis.averageRating
+      averageRating: analysis.averageRating,
+      agentSpecId: analysis.agentSpecId || undefined,
+      agentSpecName: analysis.agentSpecName || undefined,
+      domainEvaluation: (analysis.domainEvaluation as DomainEvaluation) || undefined
     };
   }
 
   async deleteVideoAnalysis(id: string): Promise<boolean> {
     const result = await db.delete(videoAnalyses).where(eq(videoAnalyses.id, id));
+    return result.rowCount !== null && result.rowCount > 0;
+  }
+
+  async createAgentSpec(spec: InsertAgentSpec): Promise<AgentSpec> {
+    const [created] = await db.insert(agentSpecs).values(spec).returning();
+    console.log(`✅ Created agent spec: ${created.name}`);
+    return created;
+  }
+
+  async getAllAgentSpecs(): Promise<AgentSpec[]> {
+    return await db.select().from(agentSpecs).orderBy(desc(agentSpecs.uploadDate));
+  }
+
+  async getAgentSpecById(id: string): Promise<AgentSpec | null> {
+    const [spec] = await db.select().from(agentSpecs).where(eq(agentSpecs.id, id));
+    return spec || null;
+  }
+
+  async getAgentSpecByName(name: string): Promise<AgentSpec | null> {
+    const [spec] = await db.select().from(agentSpecs).where(eq(agentSpecs.name, name));
+    return spec || null;
+  }
+
+  async updateAgentSpec(id: string, updates: Partial<InsertAgentSpec>): Promise<AgentSpec | null> {
+    const [updated] = await db
+      .update(agentSpecs)
+      .set(updates)
+      .where(eq(agentSpecs.id, id))
+      .returning();
+    
+    if (updated) {
+      console.log(`✅ Updated agent spec: ${updated.name}`);
+    }
+    return updated || null;
+  }
+
+  async deleteAgentSpec(id: string): Promise<boolean> {
+    const result = await db.delete(agentSpecs).where(eq(agentSpecs.id, id));
     return result.rowCount !== null && result.rowCount > 0;
   }
 

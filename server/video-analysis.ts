@@ -4,7 +4,7 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import { GoogleGenAI } from "@google/genai";
 import { getConversationDesignCriteria } from "./framework-utils";
-import type { CriterionEvaluation } from "@shared/schema";
+import type { CriterionEvaluation, AgentSpec, DomainEvaluation } from "@shared/schema";
 
 const execAsync = promisify(exec);
 
@@ -328,5 +328,178 @@ Provide your evaluation as a JSON array only, no other text.`;
   } catch (error: any) {
     console.error("Video analysis error:", error);
     throw new Error(`Failed to analyze video: ${error.message}`);
+  }
+}
+
+/**
+ * Analyzes a video against a specific agent specification for domain compliance
+ * @param videoPath - Path to the compressed video file
+ * @param agentSpec - The agent specification to evaluate against
+ * @param videoBase64 - Optional pre-encoded video (to avoid re-reading)
+ * @returns Domain evaluation with compliance rating and findings
+ */
+export async function analyzeDomainCompliance(
+  videoPath: string,
+  agentSpec: AgentSpec,
+  videoBase64?: string
+): Promise<DomainEvaluation> {
+  const apiKey = process.env.GEMINI_API_KEY || "";
+  
+  if (!apiKey) {
+    throw new Error("Gemini API key not configured");
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
+
+  try {
+    console.log(`🔍 Performing domain-specific evaluation against: ${agentSpec.name}`);
+    console.log(`⏳ Step 1/3: Preparing agent specification...`);
+
+    // Read video if not provided
+    let base64Data = videoBase64;
+    if (!base64Data) {
+      console.log(`⏳ Reading video file...`);
+      const videoBuffer = await fs.readFile(videoPath);
+      base64Data = videoBuffer.toString('base64');
+      console.log(`✓ Video file loaded`);
+    }
+
+    console.log(`⏳ Step 2/3: Analyzing conversation against agent spec...`);
+
+    // Create domain evaluation prompt
+    const prompt = `You are an expert in conversational AI quality assurance. You will analyze this video of an AI conversation to determine how well it complies with a specific agent specification.
+
+**AGENT SPECIFICATION FOR "${agentSpec.name}":**
+
+${agentSpec.specContent}
+
+---
+
+**YOUR TASK:**
+
+1. Watch the video carefully and identify specific behaviors, flows, questions, and logic demonstrated by the AI agent
+2. Compare what you observe against the agent specification document above
+3. Evaluate compliance across different categories (e.g., Question Flow, Conditional Logic, Auto-Detection, Error Handling, etc.)
+4. For each category, determine:
+   - Whether it PASSES (fully compliant with spec)
+   - Whether it FAILS (not compliant with spec)
+   - Whether it's PARTIAL (partially compliant, some issues)
+   - Severity: CRITICAL (breaks core functionality), MAJOR (significant issue), MINOR (small deviation)
+
+**IMPORTANT:** Provide your evaluation as a valid JSON object with exactly this structure:
+
+{
+  "specName": "${agentSpec.name}",
+  "overallCompliance": <number 1-5, where 5=perfect compliance, 1=major spec violations>,
+  "findings": [
+    {
+      "category": "<category name like 'Question Flow', 'Conditional Logic', etc.>",
+      "status": "<pass|fail|partial>",
+      "details": "<Detailed explanation with specific examples and timestamps from the video>",
+      "severity": "<critical|major|minor>"
+    }
+  ]
+}
+
+**CRITICAL:** Use only standard ASCII quotes (" and ') in your response - no smart quotes, curly quotes, or special unicode characters. Use only regular ASCII punctuation.
+
+**Include specific examples with timestamps:**
+- Reference specific moments from the video (e.g., "At 0:32, the agent asks...")
+- Quote actual questions or responses you observe
+- Compare what you see to what the spec requires
+- Note any deviations, missing features, or compliance successes
+
+Provide at least 4-6 findings covering different aspects of the specification. Be thorough and specific.
+
+Respond with the JSON object only, no other text.`;
+
+    const startTime = Date.now();
+    const response = await ai.models.generateContent({
+      model: "gemini-2.0-flash-exp",
+      contents: [{
+        role: "user",
+        parts: [
+          {
+            inlineData: {
+              mimeType: "video/mp4",
+              data: base64Data
+            }
+          },
+          { text: prompt }
+        ]
+      }]
+    });
+
+    const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
+    console.log(`✓ Domain analysis completed in ${elapsedTime}s`);
+
+    const responseText = response.text?.trim() || "";
+    
+    if (!responseText) {
+      throw new Error("Gemini returned empty response for domain evaluation");
+    }
+
+    console.log(`⏳ Step 3/3: Parsing domain evaluation results...`);
+
+    // Clean and parse JSON response (same cleaning logic as general evaluation)
+    let jsonText = responseText.trim();
+    jsonText = jsonText.replace(/^```json\s*/i, '').replace(/^```\s*/, '');
+    jsonText = jsonText.replace(/\s*```\s*$/, '');
+    jsonText = jsonText.trim();
+
+    // Clean non-standard characters
+    const cleanedChars: string[] = [];
+    for (let i = 0; i < jsonText.length; i++) {
+      const char = jsonText[i];
+      const code = char.charCodeAt(0);
+      
+      if (code === 0x201C || code === 0x201D || code === 0x201E || code === 0x201F || code === 0x00AB || code === 0x00BB) {
+        cleanedChars.push('"');
+      } else if (code === 0x2018 || code === 0x2019 || code === 0x201A || code === 0x201B || code === 0x2039 || code === 0x203A) {
+        cleanedChars.push("'");
+      } else if (code === 0x2013 || code === 0x2014 || code === 0x2015) {
+        cleanedChars.push('-');
+      } else if (code === 0x2026) {
+        cleanedChars.push('...');
+      } else if (code >= 0x2010 && code <= 0x2012) {
+        cleanedChars.push('-');
+      } else if ((code >= 0x2000 && code <= 0x200B) || code === 0x202F || code === 0x205F || code === 0x3000) {
+        cleanedChars.push(' ');
+      } else {
+        cleanedChars.push(char);
+      }
+    }
+    jsonText = cleanedChars.join('');
+
+    try {
+      const domainEval: DomainEvaluation = JSON.parse(jsonText);
+      
+      // Validate structure
+      if (!domainEval.specName || typeof domainEval.overallCompliance !== 'number' || !Array.isArray(domainEval.findings)) {
+        throw new Error("Invalid domain evaluation structure");
+      }
+
+      // Clamp compliance rating to 1-5
+      domainEval.overallCompliance = Math.max(1, Math.min(5, domainEval.overallCompliance));
+
+      // Validate findings
+      for (const finding of domainEval.findings) {
+        if (!finding.category || !finding.status || !finding.details) {
+          console.warn("Invalid finding structure, skipping:", finding);
+        }
+      }
+
+      console.log(`✓ Domain evaluation complete: ${domainEval.findings.length} findings, overall compliance ${domainEval.overallCompliance}/5`);
+      console.log(`🎉 Domain analysis complete for ${agentSpec.name}!`);
+      return domainEval;
+
+    } catch (parseError: any) {
+      console.error("Failed to parse domain evaluation response:", responseText);
+      throw new Error(`Failed to parse domain evaluation as JSON: ${parseError.message}`);
+    }
+
+  } catch (error: any) {
+    console.error("Domain compliance analysis error:", error);
+    throw new Error(`Failed to analyze domain compliance: ${error.message}`);
   }
 }

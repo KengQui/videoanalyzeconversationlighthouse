@@ -1,4 +1,4 @@
-import { FileSpreadsheet, MessageSquare, Menu } from "lucide-react";
+import { FileSpreadsheet, MessageSquare, Menu, FileText } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -56,11 +56,17 @@ export function Header({
                   Review AI Conversation
                 </Link>
               </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/agent-specs" data-testid="link-agent-specs">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Agent Specifications
+                </Link>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <FileSpreadsheet className="h-6 w-6 text-primary" />
           <h1 className="text-xl font-bold">
-            {location === "/" ? "Agent Eval Framework" : "Review AI Conversation"}
+            {location === "/" ? "Agent Eval Framework" : location === "/review" ? "Review AI Conversation" : "Agent Specifications"}
           </h1>
         </div>
 

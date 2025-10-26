@@ -5,7 +5,7 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import { storage } from "./storage";
 import { chatWithFramework } from "./gemini";
-import { compressVideo, analyzeVideoWithGemini, isValidVideo } from "./video-analysis";
+import { compressVideo, analyzeVideoWithGemini, analyzeDomainCompliance, isValidVideo } from "./video-analysis";
 import type { ChatRequest, ChatResponse, ConversationExample, VideoAnalysisResult } from "@shared/schema";
 
 // Ensure upload directory exists
@@ -244,6 +244,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Get agent spec if provided
+      const agentSpecId = req.body.agentSpecId;
+      let agentSpec = null;
+      if (agentSpecId) {
+        agentSpec = await storage.getAgentSpecById(agentSpecId);
+        if (!agentSpec) {
+          console.warn(`Agent spec ID ${agentSpecId} not found, proceeding with general analysis only`);
+        } else {
+          console.log(`Using agent spec: ${agentSpec.name} for domain-specific evaluation`);
+        }
+      }
+
       console.log(`Processing video upload: ${req.file.originalname} (${(req.file.size / 1024 / 1024).toFixed(2)}MB) for Milestone ${milestone}`);
 
       // Validate video file
@@ -259,20 +271,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       compressedFilePath = path.join("/tmp/video-uploads", `compressed-${Date.now()}.mp4`);
       await compressVideo(uploadedFilePath, compressedFilePath);
 
-      // Analyze with Gemini
+      // Analyze with Gemini (general Conversation Design evaluation)
       const evaluations = await analyzeVideoWithGemini(compressedFilePath, milestone);
 
-      // Save the analysis to storage
+      // Perform domain-specific evaluation if agent spec is provided
+      let domainEvaluation = undefined;
+      if (agentSpec) {
+        console.log(`📋 Starting domain compliance analysis for: ${agentSpec.name}`);
+        try {
+          domainEvaluation = await analyzeDomainCompliance(compressedFilePath, agentSpec);
+          console.log(`✅ Domain compliance analysis complete`);
+        } catch (error: any) {
+          console.error(`⚠️  Domain compliance analysis failed:`, error.message);
+          // Continue without domain evaluation - don't fail the entire analysis
+        }
+      }
+
+      // Save the analysis to storage (with domain evaluation if available)
       const savedAnalysis = await storage.saveVideoAnalysis(
         req.file.originalname,
         milestone,
-        evaluations
+        evaluations,
+        agentSpec?.id,
+        agentSpec?.name,
+        domainEvaluation
       );
 
       const result: VideoAnalysisResult = {
         success: true,
         milestone,
-        evaluations
+        evaluations,
+        agentSpecName: agentSpec?.name,
+        domainEvaluation: domainEvaluation
       };
 
       res.json(result);
@@ -335,6 +365,125 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error: any) {
       console.error("Error deleting video analysis:", error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // AGENT SPECS MANAGEMENT ROUTES
+
+  // Get all agent specs
+  app.get("/api/agent-specs", async (_req, res) => {
+    try {
+      const specs = await storage.getAllAgentSpecs();
+      res.json({ success: true, data: specs });
+    } catch (error: any) {
+      console.error("Error fetching agent specs:", error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Get agent spec by ID
+  app.get("/api/agent-specs/:id", async (req, res) => {
+    try {
+      const spec = await storage.getAgentSpecById(req.params.id);
+      if (!spec) {
+        return res.status(404).json({ success: false, error: "Agent spec not found" });
+      }
+      res.json({ success: true, data: spec });
+    } catch (error: any) {
+      console.error("Error fetching agent spec:", error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Create new agent spec (with file upload)
+  app.post("/api/agent-specs", upload.single("specFile"), async (req, res) => {
+    try {
+      const { name, specContent } = req.body;
+
+      if (!name) {
+        return res.status(400).json({ success: false, error: "Agent spec name is required" });
+      }
+
+      // Check if name already exists
+      const existing = await storage.getAgentSpecByName(name);
+      if (existing) {
+        return res.status(400).json({ success: false, error: "An agent spec with this name already exists" });
+      }
+
+      let content = specContent;
+
+      // If file was uploaded, read its content
+      if (req.file) {
+        const fs = await import('fs/promises');
+        content = await fs.readFile(req.file.path, 'utf-8');
+        // Clean up uploaded file
+        await fs.unlink(req.file.path);
+      }
+
+      if (!content) {
+        return res.status(400).json({ success: false, error: "Spec content is required" });
+      }
+
+      const spec = await storage.createAgentSpec({ name, specContent: content });
+      res.json({ success: true, data: spec });
+    } catch (error: any) {
+      console.error("Error creating agent spec:", error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Update agent spec
+  app.put("/api/agent-specs/:id", upload.single("specFile"), async (req, res) => {
+    try {
+      const { name, specContent } = req.body;
+      const updates: any = {};
+
+      if (name) {
+        // Check if name already exists (excluding current spec)
+        const existing = await storage.getAgentSpecByName(name);
+        if (existing && existing.id !== req.params.id) {
+          return res.status(400).json({ success: false, error: "An agent spec with this name already exists" });
+        }
+        updates.name = name;
+      }
+
+      // If file was uploaded, read its content
+      if (req.file) {
+        const fs = await import('fs/promises');
+        updates.specContent = await fs.readFile(req.file.path, 'utf-8');
+        // Clean up uploaded file
+        await fs.unlink(req.file.path);
+      } else if (specContent) {
+        updates.specContent = specContent;
+      }
+
+      if (Object.keys(updates).length === 0) {
+        return res.status(400).json({ success: false, error: "No updates provided" });
+      }
+
+      const updated = await storage.updateAgentSpec(req.params.id, updates);
+      if (!updated) {
+        return res.status(404).json({ success: false, error: "Agent spec not found" });
+      }
+
+      res.json({ success: true, data: updated });
+    } catch (error: any) {
+      console.error("Error updating agent spec:", error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Delete agent spec
+  app.delete("/api/agent-specs/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteAgentSpec(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ success: false, error: "Agent spec not found" });
+      }
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error deleting agent spec:", error);
       res.status(500).json({ success: false, error: error.message });
     }
   });

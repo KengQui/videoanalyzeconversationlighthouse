@@ -57,17 +57,19 @@ const specUpload = multer({
       size: file.size
     });
     
-    // Accept text files, JSON, and common spreadsheet formats
+    // Accept text files, JSON, spreadsheet, and Word document formats
     const allowedMimeTypes = [
       'text/plain',
       'application/json',
       'text/csv',
       'application/vnd.ms-excel',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/msword', // .doc files
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx files
       'application/octet-stream' // Some browsers use this for unknown types
     ];
     
-    const allowedExtensions = ['.txt', '.json', '.csv', '.xls', '.xlsx', '.md'];
+    const allowedExtensions = ['.txt', '.json', '.csv', '.xls', '.xlsx', '.md', '.doc', '.docx'];
     const hasAllowedExtension = allowedExtensions.some(ext => 
       file.originalname.toLowerCase().endsWith(ext)
     );

@@ -15,7 +15,7 @@ fs.mkdir(UPLOAD_DIR, { recursive: true }).catch(err => {
 });
 
 // Configure multer for video uploads
-const upload = multer({
+const videoUpload = multer({
   dest: UPLOAD_DIR,
   limits: {
     fileSize: 500 * 1024 * 1024, // 500MB max upload size
@@ -35,6 +35,38 @@ const upload = multer({
       cb(null, true);
     } else {
       cb(new Error('Only video files are allowed'));
+    }
+  }
+});
+
+// Configure multer for agent spec uploads
+const SPEC_UPLOAD_DIR = "/tmp/spec-uploads";
+fs.mkdir(SPEC_UPLOAD_DIR, { recursive: true }).catch(err => {
+  console.error("Failed to create spec upload directory:", err);
+});
+
+const specUpload = multer({
+  dest: SPEC_UPLOAD_DIR,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB max for spec files
+  },
+  fileFilter: (req, file, cb) => {
+    // Accept text files, JSON, and common spreadsheet formats
+    const allowedMimeTypes = [
+      'text/plain',
+      'application/json',
+      'text/csv',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    ];
+    
+    if (allowedMimeTypes.includes(file.mimetype) || 
+        file.originalname.endsWith('.txt') || 
+        file.originalname.endsWith('.json') ||
+        file.originalname.endsWith('.csv')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only text, JSON, CSV, or Excel files are allowed for agent specs'));
     }
   }
 });
@@ -187,7 +219,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     // Handle file upload with multer
     await new Promise<void>((resolve, reject) => {
-      upload.single("video")(req, res, (err: any) => {
+      videoUpload.single("video")(req, res, (err: any) => {
         if (err) {
           console.error("Multer upload error:", err);
           res.status(400).json({
@@ -397,7 +429,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create new agent spec (with file upload)
-  app.post("/api/agent-specs", upload.single("specFile"), async (req, res) => {
+  app.post("/api/agent-specs", specUpload.single("specFile"), async (req, res) => {
     try {
       const { name, specContent } = req.body;
 
@@ -434,7 +466,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update agent spec
-  app.put("/api/agent-specs/:id", upload.single("specFile"), async (req, res) => {
+  app.put("/api/agent-specs/:id", specUpload.single("specFile"), async (req, res) => {
     try {
       const { name, specContent } = req.body;
       const updates: any = {};

@@ -28,12 +28,12 @@ localPort = 35525
 externalPort = 3001
 
 [[ports]]
-localPort = 36691
-externalPort = 5173
-
-[[ports]]
 localPort = 39337
 externalPort = 3002
+
+[[ports]]
+localPort = 39745
+externalPort = 5173
 
 [[ports]]
 localPort = 39749
@@ -72,4 +72,4 @@ args = "npm run dev"
 waitForPort = 5000
 
 [agent]
-integrations = ["javascript_gemini:1.0.0", "javascript_mem_db:1.0.0"]
+integrations = ["javascript_gemini:1.0.0", "javascript_mem_db:1.0.0", "javascript_database:1.0.0"]

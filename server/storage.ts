@@ -1,7 +1,10 @@
 import type { ChatMessage, InsertChatMessage, ExcelData, ConversationExample, ExamplesData, SavedVideoAnalysis, CriterionEvaluation } from "@shared/schema";
+import { videoAnalyses } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { INITIAL_FRAMEWORK_DATA } from "./framework-data";
 import { INITIAL_EXAMPLES_DATA } from "./examples-data";
+import { db } from "./db";
+import { eq, desc } from "drizzle-orm";
 
 export interface IStorage {
   // Framework data
@@ -32,7 +35,6 @@ export class MemStorage implements IStorage {
   private frameworkData: ExcelData | null = INITIAL_FRAMEWORK_DATA;
   private chatMessages: Map<string, ChatMessage> = new Map();
   private examplesData: Map<string, ConversationExample> = new Map();
-  private videoAnalyses: Map<string, SavedVideoAnalysis> = new Map();
 
   async setFrameworkData(data: ExcelData): Promise<void> {
     this.frameworkData = data;
@@ -91,33 +93,58 @@ export class MemStorage implements IStorage {
   }
 
   async saveVideoAnalysis(videoFileName: string, milestone: number, evaluations: CriterionEvaluation[]): Promise<SavedVideoAnalysis> {
-    const id = randomUUID();
     const averageRating = evaluations.reduce((sum, e) => sum + e.rating, 0) / evaluations.length;
-    const analysis: SavedVideoAnalysis = {
-      id,
+    
+    const [saved] = await db.insert(videoAnalyses).values({
       videoFileName,
       milestone,
-      evaluations,
-      timestamp: new Date().toISOString(),
+      evaluations: evaluations as any, // JSON column
       averageRating: parseFloat(averageRating.toFixed(1))
+    }).returning();
+    
+    console.log(`💾 Saved video analysis to database: ${videoFileName} (Milestone ${milestone}) - ${evaluations.length} evaluations`);
+    
+    return {
+      id: saved.id,
+      videoFileName: saved.videoFileName,
+      milestone: saved.milestone,
+      evaluations: saved.evaluations as CriterionEvaluation[],
+      timestamp: saved.timestamp.toISOString(),
+      averageRating: saved.averageRating
     };
-    this.videoAnalyses.set(id, analysis);
-    console.log(`💾 Saved video analysis: ${videoFileName} (Milestone ${milestone}) - ${evaluations.length} evaluations`);
-    return analysis;
   }
 
   async getVideoAnalyses(): Promise<SavedVideoAnalysis[]> {
-    return Array.from(this.videoAnalyses.values()).sort((a, b) => 
-      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-    );
+    const analyses = await db.select().from(videoAnalyses).orderBy(desc(videoAnalyses.timestamp));
+    
+    return analyses.map(a => ({
+      id: a.id,
+      videoFileName: a.videoFileName,
+      milestone: a.milestone,
+      evaluations: a.evaluations as CriterionEvaluation[],
+      timestamp: a.timestamp.toISOString(),
+      averageRating: a.averageRating
+    }));
   }
 
   async getVideoAnalysisById(id: string): Promise<SavedVideoAnalysis | null> {
-    return this.videoAnalyses.get(id) || null;
+    const [analysis] = await db.select().from(videoAnalyses).where(eq(videoAnalyses.id, id));
+    
+    if (!analysis) return null;
+    
+    return {
+      id: analysis.id,
+      videoFileName: analysis.videoFileName,
+      milestone: analysis.milestone,
+      evaluations: analysis.evaluations as CriterionEvaluation[],
+      timestamp: analysis.timestamp.toISOString(),
+      averageRating: analysis.averageRating
+    };
   }
 
   async deleteVideoAnalysis(id: string): Promise<boolean> {
-    return this.videoAnalyses.delete(id);
+    const result = await db.delete(videoAnalyses).where(eq(videoAnalyses.id, id));
+    return result.rowCount !== null && result.rowCount > 0;
   }
 
   constructor() {

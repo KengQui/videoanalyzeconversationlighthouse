@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, json } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, json, integer, real, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -9,12 +9,30 @@ export const frameworkContent = pgTable("framework_content", {
   rowData: json("row_data").notNull(), // Flexible JSON storage for any Excel structure
 });
 
+// Video analyses schema - stores saved video analysis results
+export const videoAnalyses = pgTable("video_analyses", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  videoFileName: text("video_file_name").notNull(),
+  milestone: integer("milestone").notNull(),
+  evaluations: json("evaluations").notNull(), // Array of CriterionEvaluation
+  timestamp: timestamp("timestamp").notNull().defaultNow(),
+  averageRating: real("average_rating").notNull(),
+});
+
 export const insertFrameworkContentSchema = createInsertSchema(frameworkContent).pick({
   rowData: true,
 });
 
 export type InsertFrameworkContent = z.infer<typeof insertFrameworkContentSchema>;
 export type FrameworkContent = typeof frameworkContent.$inferSelect;
+
+export const insertVideoAnalysisSchema = createInsertSchema(videoAnalyses).omit({
+  id: true,
+  timestamp: true,
+});
+
+export type InsertVideoAnalysis = z.infer<typeof insertVideoAnalysisSchema>;
+export type VideoAnalysis = typeof videoAnalyses.$inferSelect;
 
 // Chat message schema
 export const chatMessages = pgTable("chat_messages", {

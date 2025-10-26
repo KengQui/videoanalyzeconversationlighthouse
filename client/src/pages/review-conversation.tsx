@@ -18,7 +18,7 @@ export default function ReviewConversation() {
   const { toast } = useToast();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [milestone, setMilestone] = useState<string>("1");
-  const [selectedAgentSpecId, setSelectedAgentSpecId] = useState<string>("");
+  const [selectedAgentSpecId, setSelectedAgentSpecId] = useState<string>("none");
   const [stage, setStage] = useState<AnalysisStage>("idle");
   const [results, setResults] = useState<VideoAnalysisResult | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
@@ -145,7 +145,7 @@ export default function ReviewConversation() {
     analyzeMutation.mutate({
       file: selectedFile,
       milestone: parseInt(milestone),
-      agentSpecId: selectedAgentSpecId || undefined,
+      agentSpecId: selectedAgentSpecId && selectedAgentSpecId !== "none" ? selectedAgentSpecId : undefined,
     });
   };
 
@@ -403,7 +403,7 @@ End of Report
                   <SelectValue placeholder="None (General only)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="" data-testid="option-agent-spec-none">None (General only)</SelectItem>
+                  <SelectItem value="none" data-testid="option-agent-spec-none">None (General only)</SelectItem>
                   {agentSpecs.map((spec) => (
                     <SelectItem key={spec.id} value={spec.id} data-testid={`option-agent-spec-${spec.id}`}>
                       {spec.name}

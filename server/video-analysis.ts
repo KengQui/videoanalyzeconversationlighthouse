@@ -193,9 +193,40 @@ export async function analyzeVideoWithGemini(
     console.log(`⏳ Step 3/3: Sending to Gemini AI for analysis (this may take 2-5 minutes)...`);
 
     // Create the evaluation prompt
-    const prompt = `You are an expert in conversational AI design. Analyze this video of an AI conversation interface against the following Conversation Design criteria from Milestone ${milestone} of our evaluation framework.
+    const prompt = `You are an expert in conversational AI design, evaluating this AI agent from the perspective of a non-technical HR/payroll user. Analyze this video against the following Conversation Design criteria from Milestone ${milestone} of our evaluation framework.
 
 Watch the video carefully and provide specific examples with timestamps for each criterion.
+
+**CRITICAL EVALUATION GUIDANCE:**
+
+When evaluating "Avoid technical and UKG jargon" - be EXTREMELY strict. Technical jargon includes:
+
+1. **ML/Data Extraction Metadata** (NEVER show to users):
+   - "confidence 1.0", "derived from X examples", "across N examples"
+   - "matching example", "extraction data", "validation metadata"
+   - Any references to how the AI processed or analyzed data internally
+
+2. **System/Backend Internals** (NEVER expose):
+   - Internal status codes ("Status: ready", "Status: pending")
+   - Database or system field names shown raw
+   - Backend processing terms ("extraction", "validation", "parsing")
+   - File processing details ("encoding", "compression ratio")
+
+3. **Technical Product Jargon**:
+   - UKG-specific terminology without explanation ("EIN tagging", "pay date offset")
+   - Unexplained acronyms (HR, PTO, FTE without defining first)
+   - System configuration terms ("configure", "parameters", "settings") without plain language
+   - Terms like "cadence", "offset", "derived" that are technical
+
+4. **Confusing Terminology**:
+   - Ambiguous phrases ("across 1 example" - does this mean 1 document? 1 row? 1 company?)
+   - Vague status indicators without context
+   - Terms that require domain expertise to understand
+
+**What IS acceptable:**
+- Plain language explanations: "when you pay employees" instead of "pay period cadence"
+- Defined terms: "PTO (Paid Time Off)" on first use
+- User-focused language: "Let me confirm what I found" instead of "Validation complete, confidence 0.95"
 
 For each criterion listed below, provide:
 1. A rating from 1-5 where:
@@ -229,6 +260,11 @@ Example format:
     "criterion": "Use simple, direct language",
     "rating": 4,
     "feedback": "The AI demonstrates strong use of clear language throughout most of the conversation. At 0:32, it asks 'How many employees do you have?' which is direct and easy to understand. At 1:45, it says 'Let me help you set up your payroll' instead of using technical jargon. However, at 2:15, the phrase 'configure pay periods' could be simplified to 'set up when you pay employees' to be more accessible to non-technical users. At 3:20, the explanation of tax withholding was clear and well-paced."
+  },
+  {
+    "criterion": "Avoid technical and UKG jargon",
+    "rating": 1,
+    "feedback": "The AI heavily uses technical jargon that would confuse non-technical users. At 1:23, it displays 'Derived from 1 matching example, confidence 1.0' - this is ML extraction metadata that users should never see. At 2:45, it shows 'Status: ready' without explaining what this means. At 3:10, it uses 'pay date offset from end date' which is technical payroll system jargon. At 4:20, it says 'across 1 example' which is ambiguous - does this mean 1 document, 1 row, or 1 company? The AI exposes internal processing details instead of using plain language like 'I found this information in your uploaded file.'"
   }
 ]
 

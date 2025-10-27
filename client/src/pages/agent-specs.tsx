@@ -7,6 +7,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Header } from "@/components/header";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { AgentSpec } from "@shared/schema";
@@ -19,6 +21,7 @@ export default function AgentSpecs() {
   const [selectedSpec, setSelectedSpec] = useState<AgentSpec | null>(null);
   const [uploadForm, setUploadForm] = useState({ name: "", file: null as File | null });
   const [editForm, setEditForm] = useState({ name: "", file: null as File | null });
+  const [chatOpen, setChatOpen] = useState(false);
 
   // Fetch all agent specs
   const { data: specsResponse, isLoading } = useQuery<{ success: boolean; data: AgentSpec[] }>({
@@ -167,11 +170,20 @@ export default function AgentSpecs() {
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-6xl">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Agent Specifications</h1>
-          <p className="text-muted-foreground mt-1">
+    <>
+      <Header
+        messages={[]}
+        onSendMessage={() => {}}
+        isLoading={false}
+        hasFrameworkData={false}
+        chatOpen={chatOpen}
+        setChatOpen={setChatOpen}
+      />
+      <div className="container mx-auto p-6 max-w-6xl">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold">Agent Specifications</h1>
+            <p className="text-muted-foreground mt-1">
             Manage specification documents for domain-specific video analysis
           </p>
         </div>
@@ -360,5 +372,6 @@ export default function AgentSpecs() {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 }

@@ -743,7 +743,7 @@ End of Report
                           onClick={() => loadSavedAnalysis(analysis)}
                           data-testid={`button-load-analysis-${analysis.id}`}
                         >
-                          Load
+                          View Analysis
                         </Button>
                         <Button
                           variant="ghost"

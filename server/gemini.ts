@@ -175,7 +175,7 @@ When explaining broad design principles or complex topics, you may conclude with
     const fullPrompt = systemPrompt + contextInfo + `\n\nUser question: ${message}`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-pro",
       contents: fullPrompt,
     });
 

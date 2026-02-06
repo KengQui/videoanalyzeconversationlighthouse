@@ -273,7 +273,7 @@ Provide your evaluation as a JSON array only, no other text.`;
     // Send to Gemini with video
     const startTime = Date.now();
     const response = await ai.models.generateContent({
-      model: "gemini-3-pro",
+      model: "gemini-3-pro-preview",
       contents: [{
         role: "user",
         parts: [
@@ -451,7 +451,7 @@ Respond with the JSON object only, no other text.`;
 
     const startTime = Date.now();
     const response = await ai.models.generateContent({
-      model: "gemini-3-pro",
+      model: "gemini-3-pro-preview",
       contents: [{
         role: "user",
         parts: [

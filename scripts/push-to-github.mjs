@@ -77,9 +77,12 @@ async function ensureRepository(connectors) {
 /**
  * Pushes all committed project files to GitHub using git.
  * Configures git identity, stages all files, commits, and force-pushes to main.
+ * Always sanitizes the remote URL (removes token) in a finally block.
  */
 function pushViaGit(token) {
-  const remoteUrl = `https://${OWNER}:${token}@github.com/${OWNER}/${REPO}.git`;
+  const encodedToken = encodeURIComponent(token);
+  const remoteUrl = `https://${OWNER}:${encodedToken}@github.com/${OWNER}/${REPO}.git`;
+  const cleanUrl = `https://github.com/${OWNER}/${REPO}.git`;
 
   run('git config user.name "KengQui"');
   run('git config user.email "kengqui@users.noreply.github.com"');
@@ -88,17 +91,19 @@ function pushViaGit(token) {
   run("git add .");
   run('git commit -m "Sync project files" --allow-empty');
 
-  // Set the remote and push
+  // Set the remote
   try {
     run(`git remote add github "${remoteUrl}"`, { stdio: "pipe" });
   } catch {
     run(`git remote set-url github "${remoteUrl}"`, { stdio: "pipe" });
   }
 
-  run("git push --force github main");
-
-  // Remove the token from the remote URL after pushing
-  run(`git remote set-url github "https://github.com/${OWNER}/${REPO}.git"`, { stdio: "pipe" });
+  try {
+    run("git push --force github main");
+  } finally {
+    // Always remove the token from the remote URL, even if push fails
+    run(`git remote set-url github "${cleanUrl}"`, { stdio: "pipe" });
+  }
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -120,7 +125,10 @@ const login = await verifyGitHubAuth(connectors);
 console.log(`Authenticated as: ${login}`);
 
 if (login !== OWNER) {
-  console.warn(`Warning: authenticated as "${login}", expected "${OWNER}". Proceeding anyway.`);
+  throw new Error(
+    `Authenticated as "${login}" but expected "${OWNER}". ` +
+    "Connect the correct GitHub account via the Replit GitHub integration."
+  );
 }
 
 // Step 2: Ensure repository exists
